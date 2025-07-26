@@ -1,1 +1,1 @@
-# Cassius Frontend using React, Vite & Tailwind
+Cassius Frontend using React, Vite & Tailwind
