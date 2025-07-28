@@ -1,8 +1,8 @@
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const API_ENDPOINTS = {
-    login: `${API_BASE_URL}/users/login-get-token`,
-    verifyToken: `${API_BASE_URL}/users/verify-token`,
+  login: `${API_BASE_URL}/users/login-get-token`,
+  verifyToken: `${API_BASE_URL}/users/verify-token`,
 };
 
-export default API_ENDPOINTS; 
+export default API_ENDPOINTS;
