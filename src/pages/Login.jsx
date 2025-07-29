@@ -55,7 +55,7 @@ function Login() {
       const res = await fetch(API_ENDPOINTS.googleLogin, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: credential }),
+        body: JSON.stringify({ token: credential }),
       });
 
       if (!res.ok) {
