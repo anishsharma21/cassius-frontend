@@ -11,6 +11,10 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [tokenExpired, setTokenExpired] = useState(false);
 
+  // Add focus state for email and password
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const googleButtonRef = useRef(null);
@@ -38,7 +42,7 @@ function Login() {
           theme: 'outline',
           size: 'large',
           text: 'continue_with',
-          shape: 'pill',
+          shape: 'rectangular',
           logo_alignment: 'center',
           width: 300,
         });
@@ -76,6 +80,7 @@ function Login() {
       localStorage.setItem(
         'user',
         JSON.stringify({
+          id: data.id,
           email: data.email,
           first_name: data.first_name,
           last_name: data.last_name,
@@ -137,6 +142,7 @@ function Login() {
           first_name: data.first_name,
           last_name: data.last_name,
           initials: data.initials,
+          display_name: data.display_name,
         })
       );
 
@@ -181,11 +187,11 @@ function Login() {
 
       <div className="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <p>Cassius Logo Placeholder</p>
+          <p className="font-bold text-2xl">CASSIUS</p>
         </div>
 
         <div className="max-w-sm w-full bg-white rounded-lg shadow-md p-8 min-h-[400px]">
-          <h2 className="text-center text-3xl font-bold text-gray-900">Sign in</h2>
+          <h2 className="text-center text-xl font-semibold text-black">Sign in</h2>
 
           {/* GOOGLE SIGN-IN BUTTON */}
           <div className="mt-6 flex justify-center">
@@ -221,29 +227,37 @@ function Login() {
             )}
           </div>
 
-          <div className="mt-6 border-t pt-6">
+          <div className="mt-6 border-t border-gray-500 pt-6">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="username" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="username" className="text-sm font-medium text-black">
                     Email
                   </label>
-                  <input
-                    id="username"
-                    type="email"
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setTokenExpired(false);
-                    }}
-                  />
+                  <div
+                    className={`mt-1 block w-full max-w-sm px-3 py-2 rounded-lg transition-colors bg-white ${emailFocused ? 'border-black' : 'border-gray-400'} border`}
+                    onClick={() => setEmailFocused(true)}
+                  >
+                    <input
+                      id="username"
+                      type="email"
+                      required
+                      placeholder="Enter your email address"
+                      className="w-full bg-transparent border-none outline-none shadow-none text-sm text-gray-700"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        setTokenExpired(false);
+                      }}
+                      onFocus={() => setEmailFocused(true)}
+                      onBlur={() => setEmailFocused(false)}
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between">
-                    <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="password" className="text-sm font-medium text-black">
                       Password
                     </label>
                     <button
@@ -254,17 +268,25 @@ function Login() {
                       {showPassword ? 'hide' : 'show'}
                     </button>
                   </div>
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setTokenExpired(false);
-                    }}
-                  />
+                  <div
+                    className={`mt-1 block w-full max-w-sm px-3 py-2 rounded-lg transition-colors bg-white ${passwordFocused ? 'border-black' : 'border-gray-400'} border`}
+                    onClick={() => setPasswordFocused(true)}
+                  >
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="Enter your password"
+                      className="w-full bg-transparent border-none outline-none shadow-none text-sm text-gray-700"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setTokenExpired(false);
+                      }}
+                      onFocus={() => setPasswordFocused(true)}
+                      onBlur={() => setPasswordFocused(false)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -291,7 +313,7 @@ function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full px-4 py-2 bg-blue-600 text-white text-sm cursor-pointer font-medium rounded-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150"
+                  className="w-full px-4 py-2 bg-gray-800 text-white text-sm cursor-pointer font-medium rounded-lg shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition duration-150"
                 >
                   <div className="flex items-center justify-center">
                     {loading && (
@@ -325,7 +347,7 @@ function Login() {
                   Don't have an account?
                   <button
                     type="button"
-                    className="text-black underline ml-2 cursor-pointer"
+                    className="text-black hover:text-gray-800 underline ml-2 cursor-pointer font-medium"
                     onClick={() => navigate('/signup')}
                   >
                     Sign up

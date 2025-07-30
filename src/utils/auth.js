@@ -1,9 +1,7 @@
 import { jwtDecode } from "jwt-decode";
 
 export function logout() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("token_type");
-  localStorage.removeItem("user");
+  localStorage.clear();
 }
 
 export function getAuthStatus() {

@@ -20,28 +20,28 @@ function Landing() {
       {/* Navigation Bar */}
       <nav className="w-full mx-auto flex justify-between py-4 bg-white">
         <div>
-          <p>Cassius Logo Placeholder</p>
+          <p className="mt-2 font-bold text-2xl">CASSIUS</p>
         </div>
-        <ul className="flex mx-auto gap-12 text-lg pt-4 font-medium text-gray-700">
-          <li className="cursor-pointer hover:text-orange-600 transition-colors">SEO & GEO</li>
-          <li className="cursor-pointer hover:text-orange-600 transition-colors">Social Media</li>
-          <li className="cursor-pointer hover:text-orange-600 transition-colors">Analytics</li>
-          <li className="cursor-pointer hover:text-orange-600 transition-colors">Blog</li>
+        <ul className="flex mx-auto gap-12 text-lg pt-4 font-sm text-gray-800">
+          <li className="cursor-pointer hover:text-gray-700 transition-colors">Social Media</li>
+          <li className="cursor-pointer hover:text-gray-700 transition-colors">Content Studio</li>
+          <li className="cursor-pointer hover:text-gray-700 transition-colors">Partnerships</li>
+          <li className="cursor-pointer hover:text-gray-700 transition-colors">Analytics</li>
         </ul>
         <button
-          className="bg-orange-500 my-1 text-white px-6 rounded-full font-semibold shadow hover:bg-orange-600 transition-colors hover:cursor-pointer"
+          className="bg-gray-800 text-white px-6 rounded-full font-semibold shadow hover:bg-gray-700 transition-colors hover:cursor-pointer"
           onClick={() => navigate('/login')}
         >
           Get Started
         </button>
       </nav>
       
-      <div className="pr-25 pl-25 text-center mt-15">
-        <h1 className="text-6xl leading-tight text-black">
-          Describe your business. Cassius does the marketing.
+      <div className="pr-25 pl-25 text-center mt-20">
+        <h1 className="text-5xl font-semibold leading-tight text-black">
+          Cassius does your marketing. All of it.
         </h1>
-        <p className="pl-20 pr-20 pt-5 text-xl text-gray-700">
-          Cassius builds and executes your entire campaign. Strategy, content, engagement, and more. Ready in minutes.
+        <p className="pl-35 pr-35 pt-8 text-lg text-gray-700">
+          Describe your business and watch Cassius create your campaign. Strategy, content, engagement, and more. Ready in minutes.
         </p>
       </div>
 
@@ -51,6 +51,8 @@ function Landing() {
         setInput={setPromptInput}
         handleSubmit={handleSubmit}
       />
+
+      <div className="mt-80"></div>
 
       {/* Footer */}
       <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-white border-t border-gray-100 mt-24">
