@@ -83,12 +83,9 @@ function Login() {
           localStorage.setItem(
             'user',
             JSON.stringify({
-              id: data.user_id,
               email: data.email,
-              first_name: data.first_name,
-              last_name: data.last_name,
-              initials: data.initials,
               display_name: data.display_name,
+              initials: data.initials,
             })
           );
 
@@ -157,10 +154,8 @@ function Login() {
         'user',
         JSON.stringify({
           email: data.email,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          initials: data.initials,
           display_name: data.display_name,
+          initials: data.initials,
         })
       );
 

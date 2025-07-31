@@ -136,18 +136,15 @@ function SignUp() {
 
         const data = await response.json();
         
-        // Store user data
+        // Store user data (only token, email, display_name, and initials)
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('token_type', data.token_type);
         localStorage.setItem(
           'user',
           JSON.stringify({
-            id: data.user_id,
             email: data.email,
-            first_name: data.first_name,
-            last_name: data.last_name,
-            initials: data.initials,
             display_name: data.display_name,
+            initials: data.initials,
           })
         );
         

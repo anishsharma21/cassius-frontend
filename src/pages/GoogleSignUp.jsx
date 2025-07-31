@@ -100,13 +100,15 @@ function GoogleSignUp() {
       // Create company
       const response = await fetch(API_ENDPOINTS.createCompany, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userData.access_token}`
+        },
         body: JSON.stringify({
           name: formData.company_name,
           description: formData.company_description,
           target_market: formData.company_target_market,
           website_url: formData.company_website,
-          admin_user_id: userData.user_id,
         }),
       });
 
@@ -119,18 +121,15 @@ function GoogleSignUp() {
 
       const companyData = await response.json();
       
-      // Store final user data
+      // Store final user data (only token, email, display_name, and initials)
       localStorage.setItem('access_token', userData.access_token);
       localStorage.setItem('token_type', userData.token_type);
       localStorage.setItem(
         'user',
         JSON.stringify({
-          id: userData.user_id,
           email: userData.email,
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          initials: userData.initials,
           display_name: userData.display_name,
+          initials: userData.initials,
         })
       );
       
