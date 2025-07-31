@@ -90,7 +90,7 @@ function GoogleSignUp() {
     try {
       // Get user data from localStorage (set during Google signup)
       const userData = JSON.parse(localStorage.getItem('temp_google_user') || '{}');
-      if (!userData.user_id) {
+      if (!userData.email) {
         console.log('User data not found. Please try signing in again.');
         setErrors({ general: 'User data not found. Please try signing in again.' });
         setLoading(false);
