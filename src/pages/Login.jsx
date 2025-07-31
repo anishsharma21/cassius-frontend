@@ -75,22 +75,29 @@ function Login() {
       const data = await res.json();
 
       if (data.user_status === 'EXISTING') {
-        // User exists and has company, log them in
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('token_type', data.token_type);
-        localStorage.setItem(
-          'user',
-          JSON.stringify({
-            id: data.user_id,
-            email: data.email,
-            first_name: data.first_name,
-            last_name: data.last_name,
-            initials: data.initials,
-            display_name: data.display_name,
-          })
-        );
+        // Check if user has company data
+        if (data.company_id && data.company_name) {
+          // User exists and has company, log them in
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('token_type', data.token_type);
+          localStorage.setItem(
+            'user',
+            JSON.stringify({
+              id: data.user_id,
+              email: data.email,
+              first_name: data.first_name,
+              last_name: data.last_name,
+              initials: data.initials,
+              display_name: data.display_name,
+            })
+          );
 
-        navigate('/dashboard');
+          navigate('/dashboard');
+        } else {
+          // User exists but has no company - redirect to company details
+          localStorage.setItem('temp_google_user', JSON.stringify(data));
+          navigate('/google-signup');
+        }
       } else if (data.user_status === 'NEW') {
         // User is new, store their data and redirect to company details
         localStorage.setItem('temp_google_user', JSON.stringify(data));
