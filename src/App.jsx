@@ -7,6 +7,7 @@ import PublicRoute from './components/route_guards/PublicRoute';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import GoogleSignUp from './pages/GoogleSignUp';
 import DashboardLayout from './layouts/DashboardLayout';
 import DashboardHome from './pages/DashboardHome';
 import GEO from './pages/GEO';
@@ -22,6 +23,7 @@ function App() {
         <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+        <Route path="/google-signup" element={<PublicRoute><GoogleSignUp /></PublicRoute>} />
         
         <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
           <Route index element={<Navigate to="home" replace />} />

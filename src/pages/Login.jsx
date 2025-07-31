@@ -60,7 +60,7 @@ function Login() {
     
     const credential = response.credential; // Google ID token
     try {
-      const res = await fetch(API_ENDPOINTS.googleLogin, {
+      const res = await fetch(API_ENDPOINTS.googleEntry, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: credential }),
@@ -74,21 +74,32 @@ function Login() {
 
       const data = await res.json();
 
-      // Store login data
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('token_type', data.token_type);
-      localStorage.setItem(
-        'user',
-        JSON.stringify({
-          id: data.id,
-          email: data.email,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          initials: data.initials,
-        })
-      );
+      if (data.user_status === 'EXISTING') {
+        // User exists and has company, log them in
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('token_type', data.token_type);
+        localStorage.setItem(
+          'user',
+          JSON.stringify({
+            id: data.user_id,
+            email: data.email,
+            first_name: data.first_name,
+            last_name: data.last_name,
+            initials: data.initials,
+            display_name: data.display_name,
+          })
+        );
 
-      navigate('/dashboard');
+        navigate('/dashboard');
+      } else if (data.user_status === 'NEW') {
+        // User is new, store their data and redirect to company details
+        localStorage.setItem('temp_google_user', JSON.stringify(data));
+        navigate('/google-signup');
+      } else {
+        setError('Invalid user status received');
+        setGoogleLoading(false);
+      }
+      
     } catch (err) {
       console.error(err);
       setError('Google sign in error');
