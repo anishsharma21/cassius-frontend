@@ -99,6 +99,10 @@ function Login() {
         // User is new, store their data and redirect to company details
         localStorage.setItem('temp_google_user', JSON.stringify(data));
         navigate('/google-signup');
+      } else if (data.user_status === 'NO_COMPANY') {
+        // User exists but has no company - redirect to company details
+        localStorage.setItem('temp_google_user', JSON.stringify(data));
+        navigate('/google-signup');
       } else {
         setError('Invalid user status received');
         setGoogleLoading(false);
