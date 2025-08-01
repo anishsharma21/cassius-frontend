@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import UserMenu from '../components/UserMenu';
-import WorkspaceSelector from '../components/WorkspaceSelector';
+import API_ENDPOINTS from '../config/api';
 
 const sidebarItems = [
   { 
@@ -59,15 +59,42 @@ const DashboardLayout = () => {
   const firstName = user.first_name || 'User';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
-  // Dummy business data
-  const [activeBusiness, setActiveBusiness] = useState({
-    id: 1,
-    name: 'TechStart Solutions',
-    industry: 'Software Development',
-    location: 'Sydney, Australia',
-    employees: '15-50',
-    website: 'techstart.com.au'
-  });
+  // Company data
+  const [companyName, setCompanyName] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCompanyName = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(API_ENDPOINTS.getCompanyName, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setCompanyName(data);
+        } else {
+          console.error('Failed to fetch company name');
+        }
+      } catch (error) {
+        console.error('Error fetching company name:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompanyName();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -102,7 +129,7 @@ const DashboardLayout = () => {
         {/* Top Bar */}
         <div className="bg-white px-6 py-5.5">
           <div className="relative flex items-center justify-center">
-            {/* Left Section - Fixed Active Workspace */}
+            {/* Left Section - Company Display */}
             <div className="fixed top-0 left-64 px-6 py-5.5">
               <div className="flex items-center text-md font-semibold space-x-4">
                 <div className="flex items-center space-x-2 pl-2">
@@ -112,17 +139,13 @@ const DashboardLayout = () => {
                 <div className="border-3 border-blue-900 bg-blue-900 rounded-4xl flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold text-md">
-                      {activeBusiness.name.charAt(0)}
+                      {loading ? '...' : (companyName ? companyName.charAt(0) : 'C')}
                     </span>
                   </div>
                   <h2 className="text-white font-semibold text-sm pr-4">
-                    {activeBusiness.name}
+                    {loading ? 'Loading...' : (companyName || 'Company')}
                   </h2>
                 </div>
-                <WorkspaceSelector 
-                  activeBusiness={activeBusiness}
-                  onBusinessChange={setActiveBusiness}
-                />
               </div>
             </div>
   

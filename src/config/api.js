@@ -6,6 +6,7 @@ export const API_ENDPOINTS = {
   createUserAndCompany: `${API_BASE_URL}/users/create-user-and-company`,
   createUserSocial: `${API_BASE_URL}/users/create-user-social`,
   createCompany: `${API_BASE_URL}/companies/create-company`,
+  getCompanyName: `${API_BASE_URL}/companies/get-company-name`,
   googleEntry: `${API_BASE_URL}/users/google-entry`,
   verifyToken: `${API_BASE_URL}/users/verify-token`,
 };
