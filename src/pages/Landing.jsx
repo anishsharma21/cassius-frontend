@@ -1,18 +1,101 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-import CenterPromptBox from '../components/CenterPromptBox';
+import LandingPromptBox from '../components/LandingPromptBox';
+import Footer from '../components/Footer';
+import API_ENDPOINTS from '../config/api';
 
 
 function Landing() {
   
   const navigate = useNavigate();
   const [promptInput, setPromptInput] = useState('');
+  const [showFeaturesDropdown, setShowFeaturesDropdown] = useState(false);
+  const [scrapedData, setScrapedData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const featuresRef = useRef(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Prompt submitted:', promptInput);
+  const validateUrl = (url) => {
+    // Basic URL validation
+    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    return urlPattern.test(url);
   };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!promptInput.trim()) {
+      setError('Please enter a website URL');
+      return;
+    }
+
+    // Validate URL format
+    let urlToSend = promptInput.trim();
+    if (!urlToSend.startsWith('http://') && !urlToSend.startsWith('https://')) {
+      urlToSend = 'https://' + urlToSend;
+    }
+
+    if (!validateUrl(urlToSend)) {
+      setError('Please enter a valid website URL');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setScrapedData(null);
+
+    try {
+      const response = await fetch(API_ENDPOINTS.webScrapeWebsite, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: urlToSend
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to scrape website');
+      }
+
+      const data = await response.json();
+      setScrapedData(data);
+    } catch (err) {
+      setError(err.message || 'An error occurred while scraping the website');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFeaturesClick = (e) => {
+    e.stopPropagation();
+    setShowFeaturesDropdown(!showFeaturesDropdown);
+  };
+
+  const handleFeatureNavigation = (route) => {
+    setShowFeaturesDropdown(false);
+    navigate(route);
+  };
+
+  const handleNavigation = (route) => {
+    navigate(route);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (featuresRef.current && !featuresRef.current.contains(event.target)) {
+        setShowFeaturesDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen pr-60 pl-60 bg-white flex flex-col font-sans">
@@ -20,19 +103,67 @@ function Landing() {
       {/* Navigation Bar */}
       <nav className="w-full mx-auto flex justify-between py-4 bg-white">
         <div>
-          <p className="mt-2 font-bold text-2xl">CASSIUS</p>
+          <p className="mt-2 font-bold text-black text-2xl">CASSIUS</p>
         </div>
         <ul className="flex mx-auto gap-12 text-lg pt-4 font-sm text-gray-800">
-          <li className="cursor-pointer hover:text-gray-700 transition-colors">Social Media</li>
-          <li className="cursor-pointer hover:text-gray-700 transition-colors">Content Studio</li>
-          <li className="cursor-pointer hover:text-gray-700 transition-colors">Partnerships</li>
-          <li className="cursor-pointer hover:text-gray-700 transition-colors">Analytics</li>
+          <li className="relative" ref={featuresRef}>
+            <div 
+              className="cursor-pointer text-black text-base font-medium hover:text-gray-800 transition-colors"
+              onClick={handleFeaturesClick}
+            >
+              Features
+            </div>
+            {showFeaturesDropdown && (
+              <div 
+                className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-sm z-50"
+              >
+                <div className="py-2">
+                  <div 
+                    className="px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleFeatureNavigation('/strategy')}
+                  >
+                    Strategy
+                  </div>
+                  <div 
+                    className="px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleFeatureNavigation('/social-media')}
+                  >
+                    Social Media
+                  </div>
+                  <div 
+                    className="px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleFeatureNavigation('/geo')}
+                  >
+                    GEO
+                  </div>
+                  <div 
+                    className="px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleFeatureNavigation('/reddit')}
+                  >
+                    Reddit
+                  </div>
+                </div>
+              </div>
+            )}
+          </li>
+          <li 
+            className="cursor-pointer text-black text-base font-medium hover:text-gray-800 transition-colors"
+            onClick={() => handleNavigation('/pricing')}
+          >
+            Pricing
+          </li>
+          <li 
+            className="cursor-pointer text-black text-base font-medium hover:text-gray-800 transition-colors"
+            onClick={() => handleNavigation('/blog')}
+          >
+            Blog
+          </li>
         </ul>
         <button
-          className="bg-gray-800 text-white px-6 rounded-full font-semibold shadow hover:bg-gray-700 transition-colors hover:cursor-pointer"
+          className="bg-gray-900 text-white px-4 rounded-lg text-base font-medium shadow hover:bg-gray-800 transition-colors hover:cursor-pointer"
           onClick={() => navigate('/login')}
         >
-          Get Started
+          Get started
         </button>
       </nav>
       
@@ -41,64 +172,115 @@ function Landing() {
           Cassius does your marketing. All of it.
         </h1>
         <p className="pl-35 pr-35 pt-8 text-lg text-gray-700">
-          Describe your business and watch Cassius create your campaign. Strategy, content, engagement, and more. Ready in minutes.
+          Link your website and watch Cassius create your campaign. Strategy, content, engagement, and more. Ready in minutes.
         </p>
       </div>
 
       {/* Prompt Section */}
-      <CenterPromptBox
+      <LandingPromptBox
         input={promptInput}
         setInput={setPromptInput}
         handleSubmit={handleSubmit}
       />
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-800 mr-2"></div>
+            Scraping website...
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center px-4 py-2 bg-red-100 text-red-800 rounded-lg">
+            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </div>
+        </div>
+      )}
+
+      {/* Scraped Data Display */}
+      {scrapedData && (
+        <div className="mt-8 max-w-4xl mx-auto">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-semibold text-black mb-4">Website Analysis Results</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Basic Info */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-800">Basic Information</h3>
+                {scrapedData.title && (
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Title:</span>
+                    <p className="text-black">{scrapedData.title}</p>
+                  </div>
+                )}
+                {scrapedData.description && (
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Description:</span>
+                    <p className="text-black">{scrapedData.description}</p>
+                  </div>
+                )}
+                {scrapedData.url && (
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">URL:</span>
+                    <p className="text-black break-all">{scrapedData.url}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Content Analysis */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-800">Content Analysis</h3>
+                {scrapedData.keywords && (
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Keywords:</span>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {scrapedData.keywords.map((keyword, index) => (
+                        <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {scrapedData.word_count && (
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Word Count:</span>
+                    <p className="text-black">{scrapedData.word_count}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Full Content */}
+            {scrapedData.content && (
+              <div className="mt-6">
+                <h3 className="text-lg font-medium text-gray-800 mb-3">Content Preview</h3>
+                <div className="bg-gray-50 p-4 rounded-lg max-h-64 overflow-y-auto">
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    {scrapedData.content.length > 500 
+                      ? `${scrapedData.content.substring(0, 500)}...` 
+                      : scrapedData.content
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-80"></div>
 
       {/* Footer */}
-      <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-white border-t border-gray-100 mt-24">
-        <footer className="max-w-6xl mx-auto pt-12 pb-6 px-4 bg-white">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-12">
-            <div className="min-w-[180px] mb-8 md:mb-0">
-              <div className="font-bold text-lg mb-2">Cassius</div>
-              <div className="flex items-center text-gray-500 text-sm">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                Sydney, Australia
-              </div>
-            </div>
-            <div className="flex flex-1 flex-wrap gap-12 justify-between">
-              <div>
-                <div className="font-semibold mb-2">For companies</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Get in touch</div>
-                <div className="font-semibold mt-4 mb-2">Human data</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Guide</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Process</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Data pipelines</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Incentives</div>
-              </div>
-              <div>
-                <div className="font-semibold mb-2">For creators</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Getting started</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Opportunities</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Information</div>
-              </div>
-              <div>
-                <div className="font-semibold mb-2">Resources</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Careers</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Privacy policy</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">Worker terms</div>
-              </div>
-              <div>
-                <div className="font-semibold mb-2">Support</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">cassius.com/guide</div>
-                <div className="text-gray-600 text-sm mb-1 cursor-pointer hover:underline">support@cassius.com</div>
-              </div>
-            </div>
-          </div>
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between mt-10 gap-4">
-            <div className="text-gray-400 text-sm">© 2025 Cassius Business Corporation.<br></br>"Cassius" and the Cassius logo are registered trademarks of the company.</div>
-          </div>
-        </footer>
-      </div>
+      <Footer />
     </div>
   );
 }

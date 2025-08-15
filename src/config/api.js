@@ -9,6 +9,8 @@ export const API_ENDPOINTS = {
   getCompanyName: `${API_BASE_URL}/companies/get-company-name`,
   googleEntry: `${API_BASE_URL}/users/google-entry`,
   verifyToken: `${API_BASE_URL}/users/verify-token`,
+  webScrapeWebsite: `${API_BASE_URL}/scrape/website`,
+  chatMessage: `${API_BASE_URL}/chat/message`,
 };
 
 export default API_ENDPOINTS;

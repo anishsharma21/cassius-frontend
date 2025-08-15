@@ -8,7 +8,7 @@ function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
   const [tokenExpired, setTokenExpired] = useState(false);
 
   // Add focus state for email and password
@@ -84,6 +84,7 @@ function Login() {
             email: data.email,
             display_name: data.display_name,
             initials: data.initials,
+            company_name: data.company_name,
           })
         );
 
@@ -153,6 +154,7 @@ function Login() {
           email: data.email,
           display_name: data.display_name,
           initials: data.initials,
+          company_name: data.company_name,
         })
       );
 
@@ -237,7 +239,15 @@ function Login() {
             )}
           </div>
 
-          <div className="mt-6 border-t border-gray-500 pt-6">
+          <div className="mt-6 relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-500"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-xs text-gray-500">OR</span>
+            </div>
+          </div>
+          <div className="pt-6">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
@@ -266,25 +276,16 @@ function Login() {
                 </div>
 
                 <div>
-                  <div className="flex justify-between">
-                    <label htmlFor="password" className="text-sm font-medium text-black">
-                      Password
-                    </label>
-                    <button
-                      type="button"
-                      className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? 'hide' : 'show'}
-                    </button>
-                  </div>
+                  <label htmlFor="password" className="text-sm font-medium text-black">
+                    Password
+                  </label>
                   <div
                     className={`mt-1 block w-full max-w-sm px-3 py-2 rounded-lg transition-colors bg-white ${passwordFocused ? 'border-black' : 'border-gray-400'} border`}
                     onClick={() => setPasswordFocused(true)}
                   >
                     <input
                       id="password"
-                      type={showPassword ? 'text' : 'password'}
+                      type="password"
                       required
                       placeholder="Enter your password"
                       className="w-full bg-transparent border-none outline-none shadow-none text-sm text-gray-700"

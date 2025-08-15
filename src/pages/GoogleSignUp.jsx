@@ -121,7 +121,7 @@ function GoogleSignUp() {
 
       const companyData = await response.json();
       
-      // Store final user data (only token, email, display_name, and initials)
+      // Store final user data (only token, email, display_name, initials, and company_name)
       localStorage.setItem('access_token', userData.access_token);
       localStorage.setItem('token_type', userData.token_type);
       localStorage.setItem(
@@ -130,6 +130,7 @@ function GoogleSignUp() {
           email: userData.email,
           display_name: userData.display_name,
           initials: userData.initials,
+          company_name: formData.company_name,
         })
       );
       

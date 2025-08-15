@@ -43,14 +43,11 @@ const UserMenu = () => {
 
   return (
     <div className="flex items-center space-x-3">
-      <span className="text-sm font-semibold text-black">
-        Welcome, {capitalisedDisplayName}.
-      </span>
       <div className="relative">
         <button
           ref={iconRef}
           onClick={() => setPopupOpen((prev) => !prev)}
-          className={`w-9 h-9 rounded-full bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold flex items-center justify-center border-2 cursor-pointer ${
+          className={`w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 text-white font-medium flex items-center justify-center cursor-pointer ${
             popupOpen ? 'bg-blue-600' : ''
           }`}
         >
@@ -59,22 +56,24 @@ const UserMenu = () => {
         {popupOpen && (
           <div
             ref={popupRef}
-            className="absolute top-full mt-2 right-0 w-64 bg-gray-50 border border-gray-400 rounded-lg shadow-md p-4 z-40 max-h-[80vh] overflow-auto"
+            className="absolute bottom-0 left-full ml-2 w-40 bg-white border border-gray-300 rounded-lg shadow-sm p-2 z-40 max-h-[80vh] overflow-auto"
           >
-            <div className="mb-3 text-center">{userEmail}</div>
-            <hr className="border-cyan-800 mb-3" />
-            <button className="w-full px-2 py-2 text-base text-left hover:bg-gray-100 rounded-md text-gray-700 mb-2 cursor-pointer">
-              Update Profile
+            <div className="mb-2 text-left text-sm text-gray-600 p-1">{userEmail}</div>
+            <button className="mb-2 w-full text-sm font-base text-left hover:bg-gray-100 p-1 rounded-md text-black cursor-pointer">
+              Update profile
             </button>
             <button
               onClick={handleLogout}
-              className="w-full px-2 py-2 text-left hover:bg-gray-100 rounded-md text-gray-700 cursor-pointer"
+              className="w-full text-sm font-base text-left hover:bg-gray-100 p-1 rounded-md text-black cursor-pointer"
             >
-              Sign Out
+              Sign out
             </button>
           </div>
         )}
       </div>
+      <span className="text-sm font-medium text-black">
+        Welcome, {capitalisedDisplayName}.
+      </span>
     </div>
   );
 };
