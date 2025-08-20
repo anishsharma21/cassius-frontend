@@ -9,15 +9,20 @@ const SideChat = () => {
   const [showClearTooltip, setShowClearTooltip] = useState(false);
   const conversationRef = useRef(null);
 
-  // Listen for new Reddit post messages
+  // Listen for new Reddit post messages and guide prompts
   useEffect(() => {
     const handleStorageChange = () => {
-      const newMessage = localStorage.getItem('newRedditMessage');
-      if (newMessage) {
-        const messageData = JSON.parse(newMessage);
+      // Check for guide prompts
+      const guidePrompt = localStorage.getItem('guidePrompt');
+      if (guidePrompt) {
+        const promptData = JSON.parse(guidePrompt);
+        // Clear the guide prompt from localStorage
+        localStorage.removeItem('guidePrompt');
+        
+        // Immediately submit the guide prompt without populating input
         const userMessage = {
           type: 'user',
-          content: `Hey Cassius, draft a response to this potential customer on Reddit. Here's their message: ${messageData.description}`,
+          content: promptData.content,
           timestamp: new Date()
         };
         
@@ -35,18 +40,15 @@ const SideChat = () => {
           
           const finalConversation = [...newConversation, aiMessage];
           
-          // Show loading dots for 3 seconds, then generate AI response
+          // Generate AI response
           setTimeout(async () => {
-            const aiResponse = await generateAIResponse(messageData.description);
+            const aiResponse = await generateAIResponse(promptData.content);
             const aiMessageIndex = finalConversation.length - 1;
             typeResponse(aiResponse, aiMessageIndex);
-          }, 3000);
+          }, 1000);
           
           return finalConversation;
         });
-        
-        // Clear the message from localStorage
-        localStorage.removeItem('newRedditMessage');
       }
     };
 
@@ -162,22 +164,28 @@ const SideChat = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
         body: JSON.stringify(requestBody),
       });
-
+      
       if (!response.ok) {
-        throw new Error('Failed to get AI response');
+        throw new Error('Failed to send message');
       }
-
-      const data = await response.text();
-      // Remove quotes if they exist at the beginning and end
-      let cleanData = data;
-      if (cleanData.startsWith('"') && cleanData.endsWith('"')) {
-        cleanData = cleanData.slice(1, -1);
-      } else if (cleanData.startsWith("'") && cleanData.endsWith("'")) {
-        cleanData = cleanData.slice(1, -1);
+      
+      const result = await response.json();
+      
+      // Handle the response data
+      let cleanData = result.response || result.message || result;
+      if (typeof cleanData === 'string') {
+        // Remove quotes if they exist at the beginning and end
+        if (cleanData.startsWith('"') && cleanData.endsWith('"')) {
+          cleanData = cleanData.slice(1, -1);
+        } else if (cleanData.startsWith("'") && cleanData.endsWith("'")) {
+          cleanData = cleanData.slice(1, -1);
+        }
       }
+      
       return cleanData;
     } catch (error) {
       console.error('Error calling chat API:', error);
@@ -289,21 +297,21 @@ const SideChat = () => {
     <div className="flex flex-col h-full">
              {/* Header */}
        <div className="flex justify-between -mt-1 items-center p-4">
-         <h3 className="text-sm text-black font-semibold">New chat</h3>
+         <h3 className="text-base font-normal text-black">Chat</h3>
          <div className="relative">
            <button className="cursor-pointer"
              onMouseEnter={() => setShowClearTooltip(true)}
              onMouseLeave={() => setShowClearTooltip(false)}
              onClick={clearChat}
            >
-             <img src={rewindIcon} alt="Rewind" className="w-4 h-4" />
+             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/></svg>
            </button>
            
            {/* Clear Chat Tooltip */}
            {showClearTooltip && (
-             <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
-               Clear Chat
-             </div>
+                        <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-base font-normal px-2 py-1 rounded whitespace-nowrap z-10">
+             Clear Chat
+           </div>
            )}
          </div>
        </div>
@@ -320,14 +328,14 @@ const SideChat = () => {
                // User message bubble
                <div className="flex justify-end">
                  <div className="rounded-lg bg-gray-200 p-2 max-w-[85%]">
-                   <p className="text-sm text-black">{message.content}</p>
+                   <p className="text-base font-normal text-black">{message.content}</p>
                  </div>
                </div>
              ) : (
                // AI message bubble
                <div className="flex justify-start">
                  <div className="rounded-lg bg-white w-full">
-                   <div className="text-sm text-black leading-relaxed font-sans">
+                   <div className="text-base font-normal text-black leading-relaxed font-sans">
                      {message.content && renderFormattedText(message.content)}
                      {message.isTyping && <span className="animate-pulse">|</span>}
                      {!message.content && !message.isTyping && (
@@ -349,12 +357,12 @@ const SideChat = () => {
        {/* Chat Prompt Box */}
        <div className="mt-auto px-3 py-3">
         <div className="relative h-26 border bg-gray-100 border-gray-200 rounded-lg">
-          <form onSubmit={handleSubmit} className="h-full text-sm text-black pr-12 pl-3 pt-3">
+          <form onSubmit={handleSubmit} className="h-full text-base font-normal text-black pr-12 pl-3 pt-3">
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Ask Cassius"
-              className="w-full outline-none bg-transparent resize-none h-full overflow-y-auto"
+              className="w-full outline-none bg-transparent resize-none h-full overflow-y-auto text-base font-normal text-black placeholder-gray-500"
               rows="1"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -365,7 +373,7 @@ const SideChat = () => {
             />
             <button
               type="submit"
-              className="absolute bottom-2 right-2 bg-black cursor-pointer text-white rounded-lg flex items-center justify-center"
+              className="absolute bottom-2 right-2 bg-black cursor-pointer text-white rounded-md flex items-center justify-center"
               style={{ width: '25px', height: '25px' }}
             >
               <svg

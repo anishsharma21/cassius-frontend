@@ -2,14 +2,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const API_ENDPOINTS = {
   login: `${API_BASE_URL}/users/login-get-token`,
-  createUser: `${API_BASE_URL}/users/create-user`,
-  createUserAndCompany: `${API_BASE_URL}/users/create-user-and-company`,
-  createUserSocial: `${API_BASE_URL}/users/create-user-social`,
-  createCompany: `${API_BASE_URL}/companies/create-company`,
+  signup: `${API_BASE_URL}/users/signup`,
   getCompanyName: `${API_BASE_URL}/companies/get-company-name`,
-  googleEntry: `${API_BASE_URL}/users/google-entry`,
+  companyProfile: `${API_BASE_URL}/companies/profile`,
+  updateCompany: `${API_BASE_URL}/companies/update-company`,
+  uploadFile: `${API_BASE_URL}/companies/upload-file`,
+  getCompanyFiles: `${API_BASE_URL}/companies/files`,
+  deleteCompanyFile: `${API_BASE_URL}/companies/files`,
   verifyToken: `${API_BASE_URL}/users/verify-token`,
-  webScrapeWebsite: `${API_BASE_URL}/scrape/website`,
+  userProfile: `${API_BASE_URL}/users/profile`,
   chatMessage: `${API_BASE_URL}/chat/message`,
 };
 

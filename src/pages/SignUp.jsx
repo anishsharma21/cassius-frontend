@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_ENDPOINTS from '../config/api';
+import cassiusLogo from '../assets/cassius.png';
 
 function SignUp() {
   const [formData, setFormData] = useState({
@@ -119,9 +120,9 @@ function SignUp() {
         password: formData.password,
       };
       
-      // Add website_url only if user has a real website
+      // Add company_website_url only if user has a real website
       if (formData.website_url !== 'No website yet') {
-        requestBody.website_url = formData.website_url;
+        requestBody.company_website_url = formData.website_url;
       }
       
       // Add company fields if user doesn't have a website
@@ -131,7 +132,7 @@ function SignUp() {
         requestBody.company_target_market = formData.company_target_market;
       }
       
-      const response = await fetch(API_ENDPOINTS.createUserAndCompany, {
+      const response = await fetch(API_ENDPOINTS.signup, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -146,18 +147,11 @@ function SignUp() {
 
       const data = await response.json();
       
-      // Store user data
+      // Store login data from UserLoginResponse
       localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('token_type', data.token_type);
-      localStorage.setItem(
-        'user',
-        JSON.stringify({
-          email: data.email,
-          display_name: data.display_name,
-          initials: data.initials,
-          company_name: data.company_name,
-        })
-      );
+      
+      // Set flag for new user to redirect to guide
+      localStorage.setItem('isNewUser', 'true');
       
       // Redirect to dashboard
       navigate('/dashboard');
@@ -271,8 +265,8 @@ function SignUp() {
   return (
     <div className="min-h-screen pr-60 pl-60 bg-white flex flex-col font-sans">
       <div className="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <p className="font-bold text-2xl">CASSIUS</p>
+        <div className="mb-8 flex justify-center">
+          <img src={cassiusLogo} alt="Cassius" className="h-15" />
         </div>
         <div className="max-w-sm w-full bg-white rounded-lg shadow-md p-8">
           <h2 className="text-center text-xl font-semibold text-black mb-6">

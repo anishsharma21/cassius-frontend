@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API_ENDPOINTS from '../config/api';
+import cassiusLogo from '../assets/cassius.png';
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   const [tokenExpired, setTokenExpired] = useState(false);
 
@@ -17,7 +17,6 @@ function Login() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const googleButtonRef = useRef(null);
 
   // Token expiration state from ProtectedRoute
   useEffect(() => {
@@ -28,90 +27,8 @@ function Login() {
     }
   }, [location]);
 
-  // ---- GOOGLE SIGN IN ----
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (window.google && googleButtonRef.current && !googleLoading) {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          callback: handleGoogleCredential,
-        });
-
-        // Styled Google button
-        window.google.accounts.id.renderButton(googleButtonRef.current, {
-          theme: 'outline',
-          size: 'large',
-          text: 'continue_with',
-          shape: 'rectangular',
-          logo_alignment: 'center',
-          width: 300,
-        });
-
-        clearInterval(timer);
-      }
-    }, 300);
-
-    return () => clearInterval(timer);
-  }, [googleLoading]);
-
-  const handleGoogleCredential = async (response) => {
-    setGoogleLoading(true);
-    setError('');
-    
-    const credential = response.credential; // Google ID token
-    try {
-      const res = await fetch(API_ENDPOINTS.googleEntry, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: credential }),
-      });
-
-      if (!res.ok) {
-        setError('Google sign in failed');
-        setGoogleLoading(false);
-        return;
-      }
-
-      const data = await res.json();
-
-      if (data.user_status === 'EXISTING') {
-        // User exists and has company, log them in
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('token_type', data.token_type);
-        localStorage.setItem(
-          'user',
-          JSON.stringify({
-            email: data.email,
-            display_name: data.display_name,
-            initials: data.initials,
-            company_name: data.company_name,
-          })
-        );
-
-        navigate('/dashboard');
-      } else if (data.user_status === 'NEW') {
-        // User is new, store their data and redirect to company details
-        localStorage.setItem('temp_google_user', JSON.stringify(data));
-        navigate('/google-signup');
-      } else if (data.user_status === 'NO_COMPANY') {
-        // User exists but has no company - redirect to company details
-        localStorage.setItem('temp_google_user', JSON.stringify(data));
-        navigate('/google-signup');
-      } else {
-        setError('Invalid user status received');
-        setGoogleLoading(false);
-      }
-      
-    } catch (err) {
-      console.error(err);
-      setError('Google sign in error');
-      setGoogleLoading(false);
-    }
-  };
-
   // ---- EMAIL/PASSWORD LOGIN ----
   const validateForm = () => {
-    setTokenExpired(false);
     if (!username || !password) {
       setError('Please enter your email and password');
       return false;
@@ -123,13 +40,15 @@ function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validateForm()) return;
-    setLoading(true);
 
-    const formDetails = new URLSearchParams();
-    formDetails.append('username', username);
-    formDetails.append('password', password);
+    setLoading(true);
+    setError('');
 
     try {
+      const formDetails = new URLSearchParams();
+      formDetails.append('username', username);
+      formDetails.append('password', password);
+
       const response = await fetch(API_ENDPOINTS.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -145,18 +64,8 @@ function Login() {
 
       const data = await response.json();
 
-      // Store login data from UserLoginResponse
+      // Store only the access token in localStorage
       localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('token_type', data.token_type);
-      localStorage.setItem(
-        'user',
-        JSON.stringify({
-          email: data.email,
-          display_name: data.display_name,
-          initials: data.initials,
-          company_name: data.company_name,
-        })
-      );
 
       navigate('/dashboard');
     } catch (error) {
@@ -198,55 +107,13 @@ function Login() {
       )}
 
       <div className="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <p className="font-bold text-2xl">CASSIUS</p>
+        <div className="mb-8 flex justify-center">
+          <img src={cassiusLogo} alt="Cassius" className="h-15" />
         </div>
 
         <div className="max-w-sm w-full bg-white rounded-lg shadow-md p-8 min-h-[400px]">
           <h2 className="text-center text-xl font-semibold text-black">Sign in</h2>
 
-          {/* GOOGLE SIGN-IN BUTTON */}
-          <div className="mt-6 flex justify-center">
-            {googleLoading ? (
-              <button
-                disabled
-                className="w-[300px] h-[40px] bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-full shadow-sm flex items-center justify-center cursor-not-allowed"
-              >
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-5 w-5 text-gray-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                <span>Signing in with Google...</span>
-              </button>
-            ) : (
-              <div ref={googleButtonRef}></div>
-            )}
-          </div>
-
-          <div className="mt-6 relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-500"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-xs text-gray-500">OR</span>
-            </div>
-          </div>
           <div className="pt-6">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-4">
@@ -320,7 +187,7 @@ function Login() {
                 </div>
               )}
 
-              <div>
+              <div className="pt-4">
                 <button
                   type="submit"
                   disabled={loading}

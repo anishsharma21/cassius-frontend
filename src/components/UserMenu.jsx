@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../utils/auth';
+import { useAuthActions } from '../hooks/useAuth';
 
-const UserMenu = () => {
+const UserMenu = ({ user, isLoading }) => {
   const [popupOpen, setPopupOpen] = useState(false);
   const popupRef = useRef(null);
   const iconRef = useRef(null);
   const navigate = useNavigate();
+  const { logout } = useAuthActions();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -34,11 +35,10 @@ const UserMenu = () => {
     navigate('/');
   };
 
-  // Get user data from localStorage
-  const userData = JSON.parse(localStorage.getItem('user') || '{}');
-  const userEmail = userData.email || '';
-  const userInitials = userData.initials || '';
-  const displayName = userData.display_name || '';
+  // Use props data or fallback to localStorage for backward compatibility
+  const userEmail = user?.email || '';
+  const userInitials = user?.initials || '';
+  const displayName = user?.display_name || '';
   const capitalisedDisplayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
 
   return (
@@ -47,32 +47,37 @@ const UserMenu = () => {
         <button
           ref={iconRef}
           onClick={() => setPopupOpen((prev) => !prev)}
-          className={`w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 text-white font-medium flex items-center justify-center cursor-pointer ${
+          className={`w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-medium flex items-center justify-center cursor-pointer ${
             popupOpen ? 'bg-blue-600' : ''
           }`}
         >
-          {userInitials}
+          {isLoading ? (
+            <div className="w-4 h-4 bg-gray-400 rounded animate-pulse"></div>
+          ) : (
+            userInitials
+          )}
         </button>
         {popupOpen && (
           <div
             ref={popupRef}
-            className="absolute bottom-0 left-full ml-2 w-40 bg-white border border-gray-300 rounded-lg shadow-sm p-2 z-40 max-h-[80vh] overflow-auto"
+            className="absolute bottom-0 left-full ml-2 w-fit bg-white border border-gray-300 rounded-lg shadow-sm p-2 z-40 max-h-[80vh] overflow-auto"
           >
-            <div className="mb-2 text-left text-sm text-gray-600 p-1">{userEmail}</div>
-            <button className="mb-2 w-full text-sm font-base text-left hover:bg-gray-100 p-1 rounded-md text-black cursor-pointer">
-              Update profile
-            </button>
+            <div className="mb-2 text-left text-base font-normal text-black p-1">{userEmail}</div>
             <button
               onClick={handleLogout}
-              className="w-full text-sm font-base text-left hover:bg-gray-100 p-1 rounded-md text-black cursor-pointer"
+              className="w-full text-base font-normal text-left hover:bg-gray-100 p-1 rounded-md text-black cursor-pointer"
             >
               Sign out
             </button>
           </div>
         )}
       </div>
-      <span className="text-sm font-medium text-black">
-        Welcome, {capitalisedDisplayName}.
+      <span className="text-base font-normal text-black">
+        {isLoading ? (
+          <div className="h-5 bg-gray-300 rounded animate-pulse" style={{ width: '100px' }}></div>
+        ) : (
+          capitalisedDisplayName
+        )}
       </span>
     </div>
   );

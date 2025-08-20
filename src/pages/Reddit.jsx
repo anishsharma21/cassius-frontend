@@ -2,7 +2,7 @@ import React from 'react';
 
 function Reddit() {
   return (
-    <div className="">
+    <div>
       <p>Reddit Hub</p>
     </div>
   );
