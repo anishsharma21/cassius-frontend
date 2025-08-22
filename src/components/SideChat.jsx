@@ -146,18 +146,21 @@ const SideChat = () => {
   // Generate AI response from API
   const generateAIResponse = async (userPrompt) => {
     try {
-      // Build chat context from conversation history
-      const chatContext = conversation.map(msg => {
-        if (msg.type === 'user') {
-          return `User: ${msg.content}`;
-        } else {
-          return `LLM: ${msg.content}`;
-        }
-      }).join('\n');
+      // Build chat history from conversation (last 3 messages and replies)
+      const chatHistory = conversation
+        .slice(-6) // Get last 6 messages (3 user + 3 AI)
+        .map(msg => {
+          if (msg.type === 'user') {
+            return `User: ${msg.content}`;
+          } else {
+            return `Cassius: ${msg.content}`;
+          }
+        })
+        .join('\n');
 
       const requestBody = {
-        context: chatContext,
-        message: userPrompt
+        message: userPrompt,
+        chat_history: chatHistory
       };
 
       const response = await fetch(API_ENDPOINTS.chatMessage, {
@@ -175,10 +178,11 @@ const SideChat = () => {
       
       const result = await response.json();
       
-      // Handle the response data
-      let cleanData = result.response || result.message || result;
+      // Handle the response data - the API returns {response: string}
+      let cleanData = result.response || 'Sorry, I encountered an error while processing your request. Please try again.';
+      
+      // Remove quotes if they exist at the beginning and end
       if (typeof cleanData === 'string') {
-        // Remove quotes if they exist at the beginning and end
         if (cleanData.startsWith('"') && cleanData.endsWith('"')) {
           cleanData = cleanData.slice(1, -1);
         } else if (cleanData.startsWith("'") && cleanData.endsWith("'")) {
@@ -288,7 +292,7 @@ const SideChat = () => {
     });
   };
 
-  // Clear chat function
+  // Clear chat function - clears both conversation state and chat history
   const clearChat = () => {
     setConversation([]);
   };
@@ -339,10 +343,9 @@ const SideChat = () => {
                      {message.content && renderFormattedText(message.content)}
                      {message.isTyping && <span className="animate-pulse">|</span>}
                      {!message.content && !message.isTyping && (
-                       <div className="flex space-x-1">
-                         <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                         <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                         <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                       <div className="relative overflow-hidden">
+                         <span className="text-gray-600 font-medium">Thinking</span>
+                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shine"></div>
                        </div>
                      )}
                    </div>
