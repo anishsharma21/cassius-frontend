@@ -30,7 +30,7 @@ function App() {
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
           
-          <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+          <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="strategy" replace />} />
             <Route path="geo" element={<GEO />} />
             <Route path="partnerships" element={<Partnerships />} />
