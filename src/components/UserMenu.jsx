@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthActions } from '../hooks/useAuth';
 
-const UserMenu = ({ user, isLoading }) => {
+const UserMenu = ({ user, isLoading, isCollapsed }) => {
   const [popupOpen, setPopupOpen] = useState(false);
   const popupRef = useRef(null);
   const iconRef = useRef(null);
@@ -42,12 +42,12 @@ const UserMenu = ({ user, isLoading }) => {
   const capitalisedDisplayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
 
   return (
-    <div className="flex items-center space-x-3">
-      <div className="relative">
+    <div className="flex items-center">
+      <div className="icon-container flex-shrink-0">
         <button
           ref={iconRef}
           onClick={() => setPopupOpen((prev) => !prev)}
-          className={`w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-medium flex items-center justify-center cursor-pointer ${
+          className={`w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-medium text-base flex items-center justify-center cursor-pointer ${
             popupOpen ? 'bg-blue-600' : ''
           }`}
         >
@@ -60,7 +60,11 @@ const UserMenu = ({ user, isLoading }) => {
         {popupOpen && (
           <div
             ref={popupRef}
-            className="absolute bottom-0 left-full ml-2 w-fit bg-white border border-gray-300 rounded-lg shadow-sm p-2 z-40 max-h-[80vh] overflow-auto"
+            className="fixed w-fit bg-white border border-gray-300 rounded-lg shadow-lg p-2 z-[9999] max-h-[80vh] overflow-auto"
+            style={{
+              top: iconRef.current ? iconRef.current.getBoundingClientRect().top - 100 : 0,
+              left: iconRef.current ? iconRef.current.getBoundingClientRect().right + 8 : 0
+            }}
           >
             <div className="mb-2 text-left text-base font-normal text-black p-1">{userEmail}</div>
             <button
@@ -72,13 +76,17 @@ const UserMenu = ({ user, isLoading }) => {
           </div>
         )}
       </div>
-      <span className="text-base font-normal text-black">
-        {isLoading ? (
-          <div className="h-5 bg-gray-300 rounded animate-pulse" style={{ width: '100px' }}></div>
-        ) : (
-          capitalisedDisplayName
+      <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${isCollapsed ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+        {!isCollapsed && (
+          <div className="text-container ml-4 whitespace-nowrap overflow-hidden text-ellipsis">
+            {isLoading ? (
+              <div className="h-5 bg-gray-300 rounded animate-pulse" style={{ width: '100px' }}></div>
+            ) : (
+              capitalisedDisplayName
+            )}
+          </div>
         )}
-      </span>
+      </div>
     </div>
   );
 };
