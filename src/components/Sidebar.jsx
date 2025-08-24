@@ -138,8 +138,9 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
         isCollapsed ? 'w-16' : 'w-96'
       }`}
       style={{
-        width: isCollapsed ? '64px' : 'auto',
-        maxWidth: isCollapsed ? '64px' : '384px'
+        width: isCollapsed ? '64px' : '220px',
+        maxWidth: isCollapsed ? '64px' : '384px',
+        minWidth: isCollapsed ? '64px' : '220px'
       }}
     >
       <div>

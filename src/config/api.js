@@ -12,6 +12,8 @@ export const API_ENDPOINTS = {
   verifyToken: `${API_BASE_URL}/users/verify-token`,
   userProfile: `${API_BASE_URL}/users/profile`,
   chatMessage: `${API_BASE_URL}/chat/message`,
+  geoBlogPosts: `${API_BASE_URL}/companies/blog_posts`,
+  updateBlogPost: `${API_BASE_URL}/companies/update-blog-post`,
 };
 
 export default API_ENDPOINTS;

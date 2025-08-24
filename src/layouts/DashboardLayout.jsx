@@ -6,7 +6,7 @@ import SideChat from '../components/SideChat';
 
 
 const DashboardLayout = () => {
-  const [chatWidth, setChatWidth] = useState(33.33); // Percentage
+  const [chatWidth, setChatWidth] = useState(20); // Percentage - minimum width
   const [isDragging, setIsDragging] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const navigate = useNavigate();

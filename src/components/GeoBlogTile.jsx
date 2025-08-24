@@ -3,24 +3,59 @@ import React from 'react';
 const GeoBlogTile = ({ title, lastUpdated, onClick }) => {
   // Format the date to be more readable
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Debug logging
+    console.log('formatDate called with:', dateString, 'type:', typeof dateString);
     
-    if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
-    } else if (diffDays < 30) {
-      const weeks = Math.floor(diffDays / 7);
-      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        year: 'numeric'
+    if (!dateString) {
+      return 'Recently updated';
+    }
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date:', dateString);
+        return 'Recently updated';
+      }
+      
+      const now = new Date();
+      
+      // Reset time to start of day for accurate day comparison
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const postDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      
+      // Calculate difference in days
+      const diffTime = today.getTime() - postDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      console.log('Date comparison:', {
+        today: today.toISOString(),
+        postDate: postDate.toISOString(),
+        diffDays: diffDays,
+        originalDate: date.toISOString(),
+        now: now.toISOString()
       });
+      
+      if (diffDays === 0) {
+        return 'Today';
+      } else if (diffDays === 1) {
+        return 'Yesterday';
+      } else if (diffDays < 7) {
+        return `${diffDays} days ago`;
+      } else if (diffDays < 30) {
+        const weeks = Math.floor(diffDays / 7);
+        return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+      } else {
+        return date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric',
+          year: 'numeric'
+        });
+      }
+    } catch (error) {
+      console.error('Error formatting date:', error, 'dateString:', dateString);
+      return 'Recently updated';
     }
   };
 

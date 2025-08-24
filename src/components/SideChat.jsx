@@ -5,7 +5,6 @@ import API_ENDPOINTS from '../config/api';
 const SideChat = () => {
   const [prompt, setPrompt] = useState('');
   const [conversation, setConversation] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
   const [showClearTooltip, setShowClearTooltip] = useState(false);
   const conversationRef = useRef(null);
 
@@ -20,35 +19,7 @@ const SideChat = () => {
         localStorage.removeItem('guidePrompt');
         
         // Immediately submit the guide prompt without populating input
-        const userMessage = {
-          type: 'user',
-          content: promptData.content,
-          timestamp: new Date()
-        };
-        
-        // Add user message to conversation
-        setConversation(prev => {
-          const newConversation = [...prev, userMessage];
-          
-          // Add AI response placeholder
-          const aiMessage = {
-            type: 'ai',
-            content: '',
-            timestamp: new Date(),
-            isTyping: false
-          };
-          
-          const finalConversation = [...newConversation, aiMessage];
-          
-          // Generate AI response
-          setTimeout(async () => {
-            const aiResponse = await generateAIResponse(promptData.content);
-            const aiMessageIndex = finalConversation.length - 1;
-            typeResponse(aiResponse, aiMessageIndex);
-          }, 1000);
-          
-          return finalConversation;
-        });
+        handleGuidePrompt(promptData.content);
       }
     };
 
@@ -74,81 +45,49 @@ const SideChat = () => {
     }
   }, [conversation]);
 
-  // Typewriter effect for AI responses
-  const typeResponse = (responseText, messageIndex) => {
-    setIsTyping(true);
-    let index = 0;
-    const typeInterval = setInterval(() => {
-      if (index < responseText.length) {
-        setConversation(prev => {
-          const newConversation = [...prev];
-          newConversation[messageIndex] = {
-            ...newConversation[messageIndex],
-            content: responseText.substring(0, index + 1),
-            isTyping: true
-          };
-          return newConversation;
-        });
-        index++;
-      } else {
-        setConversation(prev => {
-          const newConversation = [...prev];
-          newConversation[messageIndex] = {
-            ...newConversation[messageIndex],
-            isTyping: false
-          };
-          return newConversation;
-        });
-        setIsTyping(false);
-        clearInterval(typeInterval);
-      }
-    }, 3); // Typing speed (lower = faster)
-    return () => clearInterval(typeInterval);
+  // Handle guide prompt submission
+  const handleGuidePrompt = async (content) => {
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: content,
+      timestamp: new Date()
+    };
+    
+    // Add user message to conversation
+    setConversation(prev => [...prev, userMessage]);
+    
+    // Generate AI response
+    await generateAIResponse(content);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (prompt.trim()) {
       const userMessage = {
+        id: Date.now(),
         type: 'user',
         content: prompt,
         timestamp: new Date()
       };
       
       // Add user message to conversation
-      setConversation(prev => {
-        const newConversation = [...prev, userMessage];
-        
-        // Add AI response placeholder
-        const aiMessage = {
-          type: 'ai',
-          content: '',
-          timestamp: new Date(),
-          isTyping: false
-        };
-        
-        const finalConversation = [...newConversation, aiMessage];
-        
-        // Generate AI response after a short delay
-        setTimeout(async () => {
-          const aiResponse = await generateAIResponse(prompt);
-          const aiMessageIndex = finalConversation.length - 1;
-          typeResponse(aiResponse, aiMessageIndex);
-        }, 500);
-        
-        return finalConversation;
-      });
+      setConversation(prev => [...prev, userMessage]);
       
+      // Clear the prompt immediately after adding to conversation
       setPrompt('');
+      
+      // Generate AI response
+      await generateAIResponse(prompt);
     }
   };
 
-  // Generate AI response from API
+  // Generate AI response from API with streaming
   const generateAIResponse = async (userPrompt) => {
     try {
-      // Build chat history from conversation (last 3 messages and replies)
+      // Build chat history from conversation (last 6 messages)
       const chatHistory = conversation
-        .slice(-6) // Get last 6 messages (3 user + 3 AI)
+        .slice(-6)
         .map(msg => {
           if (msg.type === 'user') {
             return `User: ${msg.content}`;
@@ -176,24 +115,99 @@ const SideChat = () => {
         throw new Error('Failed to send message');
       }
       
-      const result = await response.json();
+      // Create AI message placeholder
+      const aiMessageId = Date.now();
+      const aiMessage = {
+        id: aiMessageId,
+        type: 'ai',
+        content: '',
+        timestamp: new Date(),
+        isStreaming: true
+      };
       
-      // Handle the response data - the API returns {response: string}
-      let cleanData = result.response || 'Sorry, I encountered an error while processing your request. Please try again.';
+      // Add AI message to conversation
+      setConversation(prev => [...prev, aiMessage]);
       
-      // Remove quotes if they exist at the beginning and end
-      if (typeof cleanData === 'string') {
-        if (cleanData.startsWith('"') && cleanData.endsWith('"')) {
-          cleanData = cleanData.slice(1, -1);
-        } else if (cleanData.startsWith("'") && cleanData.endsWith("'")) {
-          cleanData = cleanData.slice(1, -1);
+      // Handle streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
+                
+                if (data.type === 'chunk' && data.content) {
+                  // Add to full response
+                  fullResponse += data.content;
+                  
+                  // Update the AI message content in real-time
+                  setConversation(prev => 
+                    prev.map(msg => 
+                      msg.id === aiMessageId
+                        ? { ...msg, content: fullResponse }
+                        : msg
+                    )
+                  );
+                  
+                } else if (data.type === 'complete') {
+                  // Stream is complete
+                  break;
+                } else if (data.type === 'error') {
+                  throw new Error(data.content);
+                }
+              } catch (parseError) {
+                // If JSON parsing fails, treat the line as plain text
+                const content = line.slice(6);
+                if (content && content !== '{"content": "", "type": "complete"}') {
+                  fullResponse += content;
+                  
+                  // Update the AI message content
+                  setConversation(prev => 
+                    prev.map(msg => 
+                      msg.id === aiMessageId
+                        ? { ...msg, content: fullResponse }
+                        : msg
+                    )
+                  );
+                }
+              }
+            }
+          }
         }
+      } finally {
+        reader.releaseLock();
       }
-      
-      return cleanData;
+
+      // Finalize the streaming message
+      setConversation(prev => 
+        prev.map(msg => 
+          msg.id === aiMessageId
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
+
     } catch (error) {
       console.error('Error calling chat API:', error);
-      return 'Sorry, I encountered an error while processing your request. Please try again.';
+      
+      // Update the AI message with error
+      setConversation(prev => 
+        prev.map(msg => 
+          msg.id === aiMessageId
+            ? { ...msg, content: 'Sorry, I encountered an error while processing your request. Please try again.', isStreaming: false }
+            : msg
+        )
+      );
     }
   };
 
@@ -292,73 +306,71 @@ const SideChat = () => {
     });
   };
 
-  // Clear chat function - clears both conversation state and chat history
+  // Clear chat function
   const clearChat = () => {
     setConversation([]);
   };
 
   return (
     <div className="flex flex-col h-full">
-             {/* Header */}
-       <div className="flex justify-between -mt-1 items-center p-4">
-         <h3 className="text-base font-normal text-black">Chat</h3>
-         <div className="relative">
-           <button className="cursor-pointer"
-             onMouseEnter={() => setShowClearTooltip(true)}
-             onMouseLeave={() => setShowClearTooltip(false)}
-             onClick={clearChat}
-           >
-             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/></svg>
-           </button>
-           
-           {/* Clear Chat Tooltip */}
-           {showClearTooltip && (
-                        <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-base font-normal px-2 py-1 rounded whitespace-nowrap z-10">
-             Clear Chat
-           </div>
-           )}
-         </div>
-       </div>
+      {/* Header */}
+      <div className="flex justify-between -mt-1 items-center p-4">
+        <h3 className="text-base font-normal text-black">Chat</h3>
+        <div className="relative">
+          <button className="cursor-pointer"
+            onMouseEnter={() => setShowClearTooltip(true)}
+            onMouseLeave={() => setShowClearTooltip(false)}
+            onClick={clearChat}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/></svg>
+          </button>
+          
+          {/* Clear Chat Tooltip */}
+          {showClearTooltip && (
+            <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-base font-normal px-2 py-1 rounded whitespace-nowrap z-10">
+              Clear Chat
+            </div>
+          )}
+        </div>
+      </div>
 
-       {/* Conversation Area */}
-       <div
-         className="px-4 py-4 overflow-y-auto"
-         style={{ height: '760px' }}
-         ref={conversationRef}
-       >
-         {conversation.map((message, index) => (
-           <div key={index} className="mb-4">
-             {message.type === 'user' ? (
-               // User message bubble
-               <div className="flex justify-end">
-                 <div className="rounded-lg bg-gray-200 p-2 max-w-[85%]">
-                   <p className="text-base font-normal text-black">{message.content}</p>
-                 </div>
-               </div>
-             ) : (
-               // AI message bubble
-               <div className="flex justify-start">
-                 <div className="rounded-lg bg-white w-full">
-                   <div className="text-base font-normal text-black leading-relaxed font-sans">
-                     {message.content && renderFormattedText(message.content)}
-                     {message.isTyping && <span className="animate-pulse">|</span>}
-                     {!message.content && !message.isTyping && (
-                       <div className="relative overflow-hidden">
-                         <span className="text-gray-600 font-medium">Thinking</span>
-                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shine"></div>
-                       </div>
-                     )}
-                   </div>
+      {/* Conversation Area */}
+      <div
+        className="px-4 py-4 overflow-y-auto"
+        style={{ height: '760px' }}
+        ref={conversationRef}
+      >
+        {conversation.map((message) => (
+          <div key={message.id} className="mb-4">
+            {message.type === 'user' ? (
+              // User message bubble
+              <div className="flex justify-end">
+                <div className="rounded-lg bg-gray-200 p-2 max-w-[85%]">
+                  <p className="text-base font-normal text-black">{message.content}</p>
+                </div>
+              </div>
+            ) : (
+              // AI message bubble
+              <div className="flex justify-start">
+                <div className="rounded-lg bg-white w-full">
+                  <div className="text-base font-normal text-black leading-relaxed font-sans">
+                    {message.content && renderFormattedText(message.content)}
+                    {!message.content && message.isStreaming && (
+                      <div className="relative overflow-hidden">
+                        <span className="text-gray-600 font-medium">Thinking</span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shine"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
-                 </div>
-               </div>
-             )}
-           </div>
-         ))}
-       </div>
-
-       {/* Chat Prompt Box */}
-       <div className="mt-auto px-3 py-3">
+      {/* Chat Prompt Box */}
+      <div className="mt-auto px-3 py-3">
         <div className="relative h-26 border bg-gray-100 border-gray-200 rounded-lg">
           <form onSubmit={handleSubmit} className="h-full text-base font-normal text-black pr-12 pl-3 pt-3">
             <textarea

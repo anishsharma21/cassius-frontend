@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useUpdateBlogPost } from '../hooks/useUpdateBlogPost';
 
 const BlogPostEditor = ({ blogPost, onClose, onSave }) => {
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const [isEditing, setIsEditing] = useState(true);
+  const [originalTitle, setOriginalTitle] = useState('');
+  const [originalContent, setOriginalContent] = useState('');
   const textareaRef = useRef(null);
+  
+  const updateBlogPostMutation = useUpdateBlogPost();
 
   useEffect(() => {
     if (blogPost) {
       setTitle(blogPost.title || '');
       setContent(blogPost.content || '');
+      setOriginalTitle(blogPost.title || '');
+      setOriginalContent(blogPost.content || '');
       // Auto-resize textarea after content is set
       setTimeout(() => {
         if (textareaRef.current) {
@@ -20,16 +27,42 @@ const BlogPostEditor = ({ blogPost, onClose, onSave }) => {
     }
   }, [blogPost]);
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave({
-        ...blogPost,
-        title,
-        content,
-        lastUpdated: new Date().toISOString()
+  const handleSave = async () => {
+    try {
+      // Determine which fields have changed
+      const hasTitleChanged = title !== originalTitle;
+      const hasContentChanged = content !== originalContent;
+      
+      if (!hasTitleChanged && !hasContentChanged) {
+        // No changes to save
+        if (onClose) onClose();
+        return;
+      }
+      
+      // Call the update API with only changed fields
+      await updateBlogPostMutation.mutateAsync({
+        blogPostId: blogPost.id,
+        title: hasTitleChanged ? title : undefined,
+        content: hasContentChanged ? content : undefined,
       });
+      
+      // Call the onSave callback if provided
+      if (onSave) {
+        onSave({
+          ...blogPost,
+          title,
+          content,
+          lastUpdated: new Date().toISOString()
+        });
+      }
+      
+      // Close the editor
+      if (onClose) onClose();
+      
+    } catch (error) {
+      console.error('Failed to save blog post:', error);
+      // Error is already displayed in the UI via the mutation error state
     }
-    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -50,6 +83,15 @@ const BlogPostEditor = ({ blogPost, onClose, onSave }) => {
   const handleContentChange = (e) => {
     setContent(e.target.value);
     autoResizeTextarea(e.target);
+  };
+
+  // Handle title change and clear errors
+  const handleTitleChange = (e) => {
+    setTitle(e.target.value);
+    // Clear error when user starts typing
+    if (updateBlogPostMutation.error) {
+      updateBlogPostMutation.reset();
+    }
   };
 
 
@@ -83,9 +125,14 @@ const BlogPostEditor = ({ blogPost, onClose, onSave }) => {
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+            disabled={updateBlogPostMutation.isPending}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+              updateBlogPostMutation.isPending
+                ? 'bg-blue-400 text-white cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            Save
+            {updateBlogPostMutation.isPending ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
@@ -101,17 +148,35 @@ const BlogPostEditor = ({ blogPost, onClose, onSave }) => {
             </div>
 
             {/* Title Edit Field */}
-            <div className="mb-4 flex items-center gap-3">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                Title:
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                placeholder="Enter blog post title..."
-              />
+            <div className="mb-4">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  Title:
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={handleTitleChange}
+                  className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm ${
+                    updateBlogPostMutation.error ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter blog post title..."
+                />
+              </div>
+              
+              {/* Error Message */}
+              {updateBlogPostMutation.error && (
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-red-700">
+                      {updateBlogPostMutation.error.message}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Main Text Editor */}
