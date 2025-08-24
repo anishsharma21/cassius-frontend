@@ -51,7 +51,7 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100">
         {/* Sidebar Component */}
         <Sidebar
           isCollapsed={isSidebarCollapsed}
@@ -60,18 +60,18 @@ const DashboardLayout = () => {
 
       {/* Main Content Area - Floating white sections */}
       <div 
-        className="flex-1"
+        className="flex-1 flex flex-col"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        <div className="flex h-full p-2">
+        <div className="flex flex-1 p-2 min-h-0">
           {/* Main Page - Floating white section */}
           <div 
-            className="-ml-2 py-3 px-4 bg-white rounded-xl shadow-sm overflow-hidden"
+            className="-ml-2 px-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col"
             style={{ width: `${100 - chatWidth}%` }}
           >
-            <div className="h-full overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               <Outlet />
             </div>
           </div>
