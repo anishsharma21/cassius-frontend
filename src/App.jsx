@@ -18,6 +18,7 @@ import Partnerships from './pages/Partnerships';
 import CompanyProfile from './pages/CompanyProfile';
 import Guide from './pages/Guide';
 import Feedback from './pages/Feedback';
+import BlogPostEditorPage from './pages/BlogPostEditorPage';
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ function App() {
           <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route index element={<Navigate to="strategy" replace />} />
             <Route path="geo" element={<GEO />} />
+            <Route path="geo/:blogPostSlug" element={<BlogPostEditorPage />} />
             <Route path="partnerships" element={<Partnerships />} />
             <Route path="reddit" element={<Reddit />} />
             <Route path="strategy" element={<Strategy />} />

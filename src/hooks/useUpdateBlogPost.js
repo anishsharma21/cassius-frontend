@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import API_ENDPOINTS from '../config/api';
+import { handleUnauthorizedResponse } from '../utils/auth';
 
 export const useUpdateBlogPost = () => {
   const queryClient = useQueryClient();
@@ -33,6 +34,11 @@ export const useUpdateBlogPost = () => {
         body: JSON.stringify(payload),
       });
 
+      if (response.status === 401) {
+        handleUnauthorizedResponse(queryClient);
+        throw new Error('Unauthorized');
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = errorData.detail || 'Failed to update blog post';
@@ -41,9 +47,11 @@ export const useUpdateBlogPost = () => {
 
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('🔄 useUpdateBlogPost onSuccess triggered, invalidating geoBlogPosts cache');
       // Invalidate and refetch blog posts to show updated data
       queryClient.invalidateQueries({ queryKey: ['geoBlogPosts'] });
+      console.log('✅ geoBlogPosts cache invalidation completed');
     },
   });
 };

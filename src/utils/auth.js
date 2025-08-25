@@ -19,6 +19,21 @@ export function clearQueryCache(queryClient) {
   }
 }
 
+export function handleUnauthorizedResponse(queryClient) {
+  console.log('Unauthorized response received, logging out user');
+  
+  // Clear access token
+  localStorage.removeItem('access_token');
+  
+  // Clear React Query cache
+  if (queryClient) {
+    queryClient.clear();
+  }
+  
+  // Redirect to login page
+  window.location.href = '/login';
+}
+
 export function getAuthStatus() {
   const token = localStorage.getItem("access_token");
   if (!token) {

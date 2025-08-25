@@ -14,6 +14,9 @@ export const API_ENDPOINTS = {
   chatMessage: `${API_BASE_URL}/chat/message`,
   geoBlogPosts: `${API_BASE_URL}/companies/blog_posts`,
   updateBlogPost: `${API_BASE_URL}/companies/update-blog-post`,
+  createBlogPost: `${API_BASE_URL}/companies/create-blog-post`,
+  deleteBlogPost: `${API_BASE_URL}/companies/delete-blog-post`,
+  getBlogPost: `${API_BASE_URL}/companies/blog_posts`,
 };
 
 export default API_ENDPOINTS;
