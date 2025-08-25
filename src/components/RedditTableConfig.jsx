@@ -6,34 +6,38 @@ const RedditTableConfig = () => {
     {
       key: "post",
       header: "Post",
-      sortable: true,
-      bold: false
+      sortable: false,
+      bold: false,
+      width: "w-65/100" // 65% width
     },
     {
-      key: "revenue",
+      key: "post_upvotes",
       header: (
         <svg className="inline w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
       ),
-      sortable: true,
-      bold: false
+      sortable: false,
+      bold: false,
+      width: "w-10/100" // 10% width
     },
     {
-      key: "sales",
+      key: "post_comments",
       header: (
         <svg className="inline w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
         </svg>
       ),
-      sortable: true,
-      bold: false
+      sortable: false,
+      bold: false,
+      width: "w-10/100" // 10% width
     },
     {
-      key: "actions",
-      header: "Actions",
+      key: "post_actions",
+      header: "Status",
       sortable: false,
-      bold: false
+      bold: false,
+      width: "w-15/100" // 15% width
     }
   ];
 

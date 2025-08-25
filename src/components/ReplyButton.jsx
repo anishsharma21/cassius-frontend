@@ -1,6 +1,7 @@
 import React from 'react';
+import Tooltip from './Tooltip';
 
-const ReplyButton = ({ text, iconID }) => {
+const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, onUnreply, isReplied = false }) => {
   // Icon mapping based on iconID
   const getIcon = (iconID) => {
     switch (iconID) {
@@ -19,7 +20,7 @@ const ReplyButton = ({ text, iconID }) => {
       case 'chat':
         return (
           <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
           </svg>
         );
       default:
@@ -27,8 +28,27 @@ const ReplyButton = ({ text, iconID }) => {
     }
   };
 
+  if (isReplied) {
+    return (
+      <Tooltip text="Mark as unreplied" position="bottom">
+        <div 
+          className="inline-flex items-center px-3 py-1 rounded-full text-sm border bg-green-50 border-green-200 text-green-700 gap-1 cursor-pointer hover:bg-green-100 transition-colors"
+          onClick={onUnreply}
+        >
+          Replied
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      </Tooltip>
+    );
+  }
+
   return (
-    <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors">
+    <button 
+      className="flex items-center gap-2 px-4 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
+      onClick={onClick}
+    >
       <span>{text}</span>
       {getIcon(iconID)}
     </button>
