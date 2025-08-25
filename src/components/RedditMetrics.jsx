@@ -5,16 +5,12 @@ const RedditMetrics = () => {
   // Metrics data
   const metrics = [
     {
-      title: "Replied Leads",
-      value: "127",
-      percentage: "+2.81%",
-      comparisonText: "From last month"
+      title: "Found Leads",
+      value: "127"
     },
     {
-      title: "Generated Clicks",
-      value: "82",
-      percentage: "+2.96%",
-      comparisonText: "From last month"
+      title: "Replied Leads",
+      value: "82"
     }
   ];
 

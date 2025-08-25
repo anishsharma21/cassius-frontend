@@ -4,20 +4,18 @@ const ExpandableContent = ({ columns, showCheckboxes, expandableData, rowIndex, 
   if (!isExpanded || !expandableData || !expandableData[rowIndex]) return null;
 
   return (
-    <tr>
-      <td colSpan={columns.length + (showCheckboxes ? 1 : 0)} className="p-0">
-        <div className="bg-white">
-          <div className="pl-12 pr-6 pb-4">
-            {/* Post Content Section */}
-            <div>
-              <div className="text-sm text-gray-700 whitespace-pre-line max-h-50 overflow-y-scroll pr-2 post-content-scroll text-justify">
-                {postContent}
-              </div>
+    <div className="w-full">
+      <div className="bg-white">
+        <div className="pl-12 pr-4 pb-4">
+          {/* Post Content Section */}
+          <div>
+            <div className="text-sm text-gray-700 whitespace-pre-line max-h-50 overflow-y-scroll pr-2 post-content-scroll text-justify">
+              {postContent}
             </div>
           </div>
         </div>
         <div className="bg-gray-50">
-          <div className="p-4">
+          <div className="pl-12 pr-3 py-4">
             <h4 className="text-sm font-medium text-gray-700 mb-3">Comments</h4>
             <div className="space-y-3">
               {expandableData[rowIndex].map((comment, commentIndex) => (
@@ -42,8 +40,8 @@ const ExpandableContent = ({ columns, showCheckboxes, expandableData, rowIndex, 
             </div>
           </div>
         </div>
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 };
 
