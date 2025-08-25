@@ -354,10 +354,25 @@ const SideChat = () => {
                     const slugMatch = data.content.match(/---BLOG_CONTENT_START:(.+)---/);
                     if (slugMatch) {
                       const blogPostSlug = slugMatch[1];
-                      console.log('Blog content streaming started for:', blogPostSlug);
+                      console.log('🎬 BLOG_CONTENT_START marker received for:', blogPostSlug);
                       
                       // Initialize the content storage for this blog post
                       localStorage.setItem(`blogPostContent_${blogPostSlug}`, '');
+                      
+                      // Set streamingBlogPost to enable content forwarding to blog editor
+                      const streamingData = {
+                        slug: blogPostSlug,
+                        timestamp: Date.now(),
+                        isStreaming: true
+                      };
+                      localStorage.setItem('streamingBlogPost', JSON.stringify(streamingData));
+                      
+                      // Show "Generating blog content" message in SideChat
+                      setIsGeneratingBlog(true);
+                      setGeneratingBlogSlug(blogPostSlug);
+                      console.log('📝 Started "Generating blog content" message for:', blogPostSlug);
+                      console.log('🔄 Set streamingBlogPost with isStreaming: true for:', blogPostSlug);
+                      console.log('📋 Streaming data:', streamingData);
                     }
                   } else if (data.content.startsWith('---BLOG_CONTENT_END:')) {
                     // Extract the blog post slug for content streaming
@@ -366,12 +381,14 @@ const SideChat = () => {
                       const blogPostSlug = slugMatch[1];
                       console.log('🎯 BLOG_CONTENT_END marker received for:', blogPostSlug);
                       
-                      // Mark that we've received the end marker, but don't stop processing yet
-                      // This will be handled by BlogPostEditorPage for proper completion detection
+                      // Store the end marker for BlogPostEditorPage to detect
                       localStorage.setItem(`blogPostEndMarker_${blogPostSlug}`, 'true');
-                      console.log('📝 End marker stored for BlogPostEditorPage to process');
                       
-                      // Stop showing "Generating blog content" message for this blog post
+                      // isStreaming is already set to false by the 'complete' signal
+                      // Just set the end marker for BlogPostEditorPage to detect
+                      console.log('🎯 BLOG_CONTENT_END marker received, end marker set for BlogPostEditorPage');
+                      
+                      // Stop showing "Generating blog content" message
                       if (generatingBlogSlug === blogPostSlug) {
                         setIsGeneratingBlog(false);
                         setGeneratingBlogSlug(null);
@@ -388,13 +405,7 @@ const SideChat = () => {
                         
                         setConversation(prev => {
                           const newConversation = [...prev, successMessage];
-                          console.log('✅ Success message added to conversation:', {
-                            messageId: successMessage.id,
-                            messageContent: successMessage.content,
-                            conversationLength: newConversation.length,
-                            timestamp: successMessage.timestamp,
-                            allMessages: newConversation.map(msg => ({ id: msg.id, type: msg.type, content: msg.content }))
-                          });
+                          console.log('✅ Success message added to conversation');
                           return newConversation;
                         });
                         console.log('✅ Added success message to conversation');
@@ -403,9 +414,19 @@ const SideChat = () => {
                   } else {
                     // Regular content, check if we're streaming to a blog post editor FIRST
                     const streamingBlogPost = localStorage.getItem('streamingBlogPost');
+                    let shouldAddToChat = true; // Flag to determine if content should go to chat
+                    
+                    console.log('🎯 Processing content chunk:', {
+                      content: data.content.substring(0, 50) + '...',
+                      hasStreamingBlogPost: !!streamingBlogPost,
+                      timestamp: new Date().toISOString()
+                    });
+                    
                     if (streamingBlogPost) {
                       try {
                         const { slug, isStreaming } = JSON.parse(streamingBlogPost);
+                        console.log('🔍 Checking streaming blog post:', { slug, isStreaming, currentContent: data.content.substring(0, 50) + '...' });
+                        
                         if (isStreaming) {
                           // Get existing content and append new content
                           const existingContent = localStorage.getItem(`blogPostContent_${slug}`) || '';
@@ -416,90 +437,65 @@ const SideChat = () => {
                           console.log('📝 Streaming content to blog post editor:', slug);
                           console.log('📊 Content length:', newContent.length);
                           console.log('📄 Content preview:', newContent.substring(0, 100) + '...');
-                          console.log('🔄 Chunk size:', data.content.length);
-                          console.log('💾 localStorage Update:', {
-                            key: `blogPostContent_${slug}`,
-                            newLength: newContent.length,
-                            chunkSize: data.content.length,
-                            lastChunk: data.content,
-                            timestamp: new Date().toISOString()
-                          });
-                          
-                          // Track if this might be the final chunk
-                          if (data.content.length <= 3) {
-                            console.log('⚠️ POTENTIAL FINAL CHUNK DETECTED:', {
-                              chunk: data.content,
-                              chunkLength: data.content.length,
-                              totalContentLength: newContent.length,
-                              timestamp: new Date().toISOString(),
-                              note: 'This small chunk might be the final content - ensuring it gets processed'
-                            });
-                          }
-                          
-                          // EXTENSIVE LOGGING: Track every word and character
-                          console.log('🔍 EXTENSIVE CONTENT ANALYSIS:', {
-                            // Current chunk details
-                            currentChunk: data.content,
-                            currentChunkLength: data.content.length,
-                            currentChunkWords: data.content.split(/\s+/).filter(word => word.length > 0),
-                            
-                            // Total content analysis
-                            totalContentLength: newContent.length,
-                            totalContentWords: newContent.split(/\s+/).filter(word => word.length > 0).length,
-                            totalContentCharacters: newContent.length,
-                            
-                            // Content boundaries
-                            last50Chars: newContent.substring(Math.max(0, newContent.length - 50)),
-                            last100Chars: newContent.substring(Math.max(0, newContent.length - 100)),
-                            last200Chars: newContent.substring(Math.max(0, newContent.length - 200)),
-                            
-                            // Word-by-word analysis
-                            last10Words: newContent.split(/\s+/).filter(word => word.length > 0).slice(-10),
-                            last20Words: newContent.split(/\s+/).filter(word => word.length > 0).slice(-20),
-                            
-                            // Character analysis
-                            lastChar: newContent.charAt(newContent.length - 1),
-                            last5Chars: newContent.substring(Math.max(0, newContent.length - 5)),
-                            last10Chars: newContent.substring(Math.max(0, newContent.length - 10)),
-                            
-                            // Content integrity check
-                            endsWithPeriod: newContent.endsWith('.'),
-                            endsWithSpace: newContent.endsWith(' '),
-                            endsWithNewline: newContent.endsWith('\n'),
-                            endsWithPunctuation: /[.!?;:,]$/.test(newContent),
-                            
-                            timestamp: new Date().toISOString()
-                          });
                           
                           // IMPORTANT: Don't add to chat conversation - this content is for the blog editor only
-                          // Skip the rest of the processing for this chunk
+                          shouldAddToChat = false;
                           console.log('🚫 Content NOT added to chat - forwarded to blog editor only');
-                          continue;
+                        } else {
+                          console.log('🔄 Streaming marked as complete (isStreaming: false), content will go to chat');
+                          console.log('📋 Current streaming state:', { slug, isStreaming, timestamp: Date.now() });
                         }
                       } catch (error) {
                         console.error('Error parsing streaming blog post data:', error);
                       }
+                    } else {
+                      console.log('🔍 No streaming blog post found, content will go to chat');
                     }
                     
                     // Only add to chat conversation if we're NOT streaming to a blog post editor
-                    fullResponse += data.content;
-                    console.log('💬 Content added to chat conversation:', data.content.substring(0, 50) + '...');
+                    if (shouldAddToChat) {
+                      fullResponse += data.content;
+                      console.log('💬 Content added to chat conversation:', data.content.substring(0, 50) + '...');
+                      
+                      // Update the AI message content in real-time
+                      setConversation(prev => 
+                        prev.map(msg => 
+                          msg.id === aiMessageId
+                            ? { ...msg, content: fullResponse }
+                            : msg
+                        )
+                      );
+                    } else {
+                      console.log('✅ Content successfully forwarded to blog editor, not added to chat');
+                    }
                     
-                    // Update the AI message content in real-time
-                    setConversation(prev => 
-                      prev.map(msg => 
-                        msg.id === aiMessageId
-                          ? { ...msg, content: fullResponse }
-                          : msg
-                      )
-                    );
+                    // Log the final decision for this content chunk
+                    console.log('🎯 Content routing decision:', {
+                      content: data.content.substring(0, 50) + '...',
+                      shouldAddToChat,
+                      destination: shouldAddToChat ? 'SideChat' : 'BlogEditor',
+                      streamingState: streamingBlogPost ? JSON.parse(streamingBlogPost) : 'none',
+                      timestamp: new Date().toISOString()
+                    });
                   }
                   
                 } else if (data.type === 'complete') {
-                  // Stream is complete - but don't mark anything as complete here
-                  // Let the BlogEditor handle completion when it sees BLOG_CONTENT_END
+                  // Stream is complete - set isStreaming to false to stop content forwarding
                   console.log('🎯 Stream completion signal received (data.type === "complete")');
-                  console.log('📤 Passing completion handling to BlogEditor - SideChat will continue streaming until BlogEditor processes BLOG_CONTENT_END');
+                  console.log('🔄 Setting isStreaming to false to stop content forwarding');
+                  
+                  // Set isStreaming to false to stop content from being forwarded to blog editor
+                  const streamingBlogPost = localStorage.getItem('streamingBlogPost');
+                  if (streamingBlogPost) {
+                    try {
+                      const streamingData = JSON.parse(streamingBlogPost);
+                      streamingData.isStreaming = false;
+                      localStorage.setItem('streamingBlogPost', JSON.stringify(streamingData));
+                      console.log('🔄 Set isStreaming to false on stream completion for:', streamingData.slug);
+                    } catch (error) {
+                      console.error('Error updating streaming state on completion:', error);
+                    }
+                  }
                   
                   // Stop showing "Generating blog content" message if we have one active
                   if (isGeneratingBlog) {
@@ -518,20 +514,13 @@ const SideChat = () => {
                     
                     setConversation(prev => {
                       const newConversation = [...prev, successMessage];
-                      console.log('✅ Success message added to conversation on stream completion:', {
-                        messageId: successMessage.id,
-                        messageContent: successMessage.content,
-                        conversationLength: newConversation.length,
-                        timestamp: successMessage.timestamp,
-                        allMessages: newConversation.map(msg => ({ id: msg.id, type: msg.type, content: msg.content }))
-                      });
+                      console.log('✅ Success message added to conversation on stream completion');
                       return newConversation;
                     });
                     console.log('✅ Added success message to conversation on stream completion');
                   }
                   
-                  // Don't mark streaming as complete - let BlogEditor handle it
-                  // This ensures all content including final chunks reaches the editor
+                  // Break out of the loop since stream is complete
                   break;
                 } else if (data.type === 'error') {
                   throw new Error(data.content);

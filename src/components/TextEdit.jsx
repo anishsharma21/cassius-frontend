@@ -6,6 +6,7 @@ const TextEdit = ({
   onTitleChange,
   onContentChange,
   error,
+  isLoading = false,
   // Optional: allow callers to tweak sizing caps without breaking existing usage
   minHeight = 120, // px
   maxHeight,       // px (leave undefined for no cap)
@@ -87,72 +88,97 @@ End your post with a strong conclusion.`;
       </div>
 
       {/* Title Edit Field */}
-      <div className="mb-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0">
-            Title:
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={onTitleChange}
-            className={`flex-1 min-w-0 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm ${
-              error ? "border-red-300" : "border-gray-300"
-            }`}
-            placeholder="Enter blog post title..."
-          />
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-4 h-4 text-red-500 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-sm text-red-700">{error.message}</p>
+      {isLoading ? (
+        <div className="mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0">
+              Title:
+            </label>
+            <div className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100">
+              <div className="h-5 bg-gray-200 rounded animate-pulse"></div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0">
+              Title:
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={onTitleChange}
+              className={`flex-1 min-w-0 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm ${
+                error ? "border-red-300" : "border-gray-300"
+              }`}
+              placeholder="Enter blog post title..."
+            />
+          </div>
+        </div>
+      )}
 
-      {/* Main Text Editor */}
-      <div
-        ref={wrapperRef}
-        className="bg-white rounded-lg border border-gray-300 px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
-      >
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => onContentChange(e.target.value)}
-          className={[
-            "w-full min-w-0 max-w-none", // fill container width fully
-            "border-0 focus:ring-0 focus:border-0 outline-none",
-            "resize-none", // we resize programmatically
-            "font-mono text-sm leading-relaxed",
-            "bg-transparent",
-            "whitespace-pre-wrap break-words", // wrap long lines but keep explicit newlines
-            "selection:bg-gray-200",
-          ].join(" ")}
-          placeholder={placeholderText}
-          style={{
-            height: `${minHeight}px`,
-            boxSizing: "border-box",
-            overflowY: "hidden", // toggled in autoGrow when capped
-          }}
-          aria-label="Markdown editor"
-        />
-      </div>
+      {/* Content Edit Field */}
+      {isLoading ? (
+        <div className="mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0">
+              Content:
+            </label>
+          </div>
+          <div className="mt-2 border border-gray-300 rounded-lg bg-gray-100 p-3">
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0">
+              Content:
+            </label>
+          </div>
+          <div className="mt-2">
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => onContentChange(e.target.value)}
+              className={`w-full border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm resize-none ${
+                error ? "border-red-300" : "border-gray-300"
+              }`}
+              placeholder={placeholderText}
+              style={{ minHeight: `${minHeight}px` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && !isLoading && (
+        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-4 h-4 text-red-500 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p className="text-sm text-red-700">{error.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

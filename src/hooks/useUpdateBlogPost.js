@@ -47,9 +47,25 @@ export const useUpdateBlogPost = () => {
 
       return await response.json();
     },
-    onSuccess: (data) => {
-      console.log('🔄 useUpdateBlogPost onSuccess triggered, invalidating geoBlogPosts cache');
-      // Invalidate and refetch blog posts to show updated data
+    onSuccess: (data, variables) => {
+      console.log('🔄 useUpdateBlogPost onSuccess triggered, updating caches');
+      
+      // Update the specific blog post cache with the new data
+      if (data && data.slug) {
+        queryClient.setQueryData(['blogPost', data.slug], data);
+        console.log('✅ Updated blog post cache for slug:', data.slug);
+      }
+      
+      // Also update the geoBlogPosts cache directly to ensure immediate updates
+      queryClient.setQueryData(['geoBlogPosts'], (oldData) => {
+        if (!oldData) return [data];
+        return oldData.map(post => 
+          post.id === data.id ? data : post
+        );
+      });
+      console.log('✅ Updated geoBlogPosts cache directly');
+      
+      // Invalidate and refetch geoBlogPosts cache to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['geoBlogPosts'] });
       console.log('✅ geoBlogPosts cache invalidation completed');
     },

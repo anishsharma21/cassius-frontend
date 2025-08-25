@@ -9,6 +9,8 @@ import Preview from '../components/Preview';
 import API_ENDPOINTS from '../config/api';
 import { handleUnauthorizedResponse } from '../utils/auth';
 
+
+
 const BlogPostEditorPage = () => {
   const { blogPostSlug } = useParams();
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ const BlogPostEditorPage = () => {
   const [originalTitle, setOriginalTitle] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [showDeletePopup, setShowDeletePopup] = useState(false);
+
   
   const updateBlogPostMutation = useUpdateBlogPost();
   const deleteBlogPostMutation = useDeleteBlogPost();
@@ -28,12 +31,15 @@ const BlogPostEditorPage = () => {
   const { data: blogPost, isLoading, error } = useQuery({
     queryKey: ['blogPost', blogPostSlug],
     queryFn: async () => {
+      console.log('🔍 Fetching blog post:', blogPostSlug);
       // First, check if we have pre-fetched data in the cache
       const cachedData = queryClient.getQueryData(['blogPost', blogPostSlug]);
       if (cachedData) {
+        console.log('✅ Using cached data for:', blogPostSlug);
         return cachedData;
       }
       
+      console.log('🌐 Fetching from database for:', blogPostSlug);
       // If no cached data, fetch from the database
       const response = await fetch(`${API_ENDPOINTS.getBlogPost}/slug/${blogPostSlug}`, {
         headers: {
@@ -47,7 +53,9 @@ const BlogPostEditorPage = () => {
       if (!response.ok) {
         throw new Error('Failed to fetch blog post');
       }
-      return response.json();
+      const data = await response.json();
+      console.log('✅ Fetched data from database:', data);
+      return data;
     },
     enabled: !!blogPostSlug,
     staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
@@ -90,49 +98,94 @@ const BlogPostEditorPage = () => {
     if (streamingBlogPost && blogPost) {
       try {
         const { slug, timestamp } = JSON.parse(streamingBlogPost);
+        console.log('🔍 Checking streaming blog post:', { slug, timestamp, currentSlug: blogPost.slug });
         
         // Check if this is the same blog post and it was created recently
         if (slug === blogPost.slug && (Date.now() - timestamp) < 30000) {
-          startContentStream();
+          console.log('✅ Starting content stream for blog post:', slug);
+          const cleanup = startContentStream();
+          return cleanup; // Return cleanup function to useEffect
+        } else {
+          console.log('⚠️ Blog post mismatch or expired:', { 
+            slug, 
+            blogPostSlug: blogPost.slug, 
+            timeDiff: Date.now() - timestamp,
+            isRecent: (Date.now() - timestamp) < 30000
+          });
         }
       } catch (error) {
         console.error('Error parsing streaming blog post data:', error);
         localStorage.removeItem('streamingBlogPost');
       }
+    } else {
+      console.log('🔍 No streaming blog post found or no blog post loaded yet');
     }
   }, [blogPost]);
 
   // Simple content stream function
   const startContentStream = () => {
     
-    // Simple interval to check for content updates
-    const interval = setInterval(() => {
+    // Simple interval to check for content updates and end markers
+    const interval = setInterval(async () => {
+      // Check for content updates
+      const currentContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
+      if (currentContent) {
+        setContent(currentContent);
+        setOriginalContent(currentContent);
+      }
+      
+      // Check for end marker - this is the key signal to auto-save
+      const endMarker = localStorage.getItem(`blogPostEndMarker_${blogPost.slug}`);
+      if (endMarker === 'true') {
+        console.log('🎯 BLOG_CONTENT_END marker detected, starting auto-save for slug:', blogPost.slug);
+        const finalContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
+        if (finalContent) {
+          console.log('📝 Final content found, calling autoSaveBlogPost');
+          console.log('📊 Content length:', finalContent.length);
+          console.log('📄 Content preview:', finalContent.substring(0, 100) + '...');
+          
+          // Call auto-save and wait for it to complete
+          await autoSaveBlogPost(finalContent);
+          
+          // Clean up after auto-save is complete
+          localStorage.removeItem('streamingBlogPost');
+          localStorage.removeItem(`blogPostContent_${blogPost.slug}`);
+          localStorage.removeItem(`blogPostEndMarker_${blogPost.slug}`);
+          
+          clearInterval(interval);
+          console.log('🧹 Cleanup completed for slug:', blogPost.slug);
+        } else {
+          console.log('⚠️ No final content found for slug:', blogPost.slug);
+        }
+      }
+      
+      // Also check if streaming has been marked as complete (isStreaming: false)
       const streamingBlogPost = localStorage.getItem('streamingBlogPost');
       if (streamingBlogPost) {
         try {
           const { slug, isStreaming } = JSON.parse(streamingBlogPost);
-          if (slug === blogPost.slug && isStreaming) {
-            const currentContent = localStorage.getItem(`blogPostContent_${slug}`);
-            if (currentContent) {
-              setContent(currentContent);
-              setOriginalContent(currentContent);
-            }
-          } else if (slug === blogPost.slug && !isStreaming) {
-            // Streaming complete, save the blog post
-            const finalContent = localStorage.getItem(`blogPostContent_${slug}`);
+          if (slug === blogPost.slug && !isStreaming) {
+            console.log('🔄 Streaming marked as complete, ensuring content is saved...');
+            const finalContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
             if (finalContent) {
-              autoSaveBlogPost(finalContent);
+              console.log('📝 Final content found, calling autoSaveBlogPost');
+              console.log('📊 Content length:', finalContent.length);
+              console.log('📄 Content preview:', finalContent.substring(0, 100) + '...');
               
-              // Clean up
+              // Call auto-save and wait for it to complete
+              await autoSaveBlogPost(finalContent);
+              
+              // Clean up after auto-save is complete
               localStorage.removeItem('streamingBlogPost');
-              localStorage.removeItem(`blogPostContent_${slug}`);
-              localStorage.removeItem(`blogPostEndMarker_${slug}`);
+              localStorage.removeItem(`blogPostContent_${blogPost.slug}`);
+              localStorage.removeItem(`blogPostEndMarker_${blogPost.slug}`);
               
               clearInterval(interval);
+              console.log('🧹 Cleanup completed for slug:', blogPost.slug);
             }
           }
         } catch (error) {
-          console.error('Error in content stream:', error);
+          console.error('Error checking streaming state:', error);
         }
       }
     }, 100);
@@ -146,37 +199,27 @@ const BlogPostEditorPage = () => {
   // Function to automatically save the blog post
   const autoSaveBlogPost = async (content) => {
     try {
+      console.log('🔄 Starting auto-save for blog post:', blogPost.id);
       
-      // Call the update API with the AI-generated content
-      const updatedBlogPost = await updateBlogPostMutation.mutateAsync({
+      // Update local state to reflect the final content
+      setContent(content);
+      setOriginalContent(content);
+      
+      console.log('✅ Content updated in editor, now saving to database...');
+      
+      // Save the content to the database without redirecting
+      console.log('🔄 Calling updateBlogPostMutation.mutateAsync...');
+      const result = await updateBlogPostMutation.mutateAsync({
         blogPostId: blogPost.id,
         content: content,
       });
       
+      console.log('✅ Auto-save completed successfully - content saved to database:', result);
       
-      // Explicitly update the cache to ensure GEO tiles are refreshed
-      queryClient.setQueryData(['blogPost', blogPost.slug], updatedBlogPost);
-      
-      // Also update the geoBlogPosts cache to include the updated content
-      queryClient.setQueryData(['geoBlogPosts'], (oldData) => {
-        if (!oldData) return [updatedBlogPost];
-        return oldData.map(post => 
-          post.id === blogPost.id ? updatedBlogPost : post
-        );
-      });
-      
-      // Force a refetch of geoBlogPosts to ensure the tiles are updated
-      // Add a small delay to ensure the API response is fully processed
-      setTimeout(() => {
-        queryClient.invalidateQueries(['geoBlogPosts']);
-      }, 100);
-      
-      // Update local state to reflect the saved content
-      setContent(content);
-      setOriginalContent(content);
+      // Auto-save completed silently - no status message needed
       
     } catch (error) {
-      console.error('Failed to auto-save blog post:', error);
+      console.error('❌ Failed to auto-save blog post:', error);
       // Don't show error to user since this is automatic
       // The user can still manually save if needed
     }
@@ -189,8 +232,9 @@ const BlogPostEditorPage = () => {
       const hasContentChanged = content !== originalContent;
       
       if (!hasTitleChanged && !hasContentChanged) {
-        // No changes to save, redirect back to GEO page
-        navigate('/dashboard/geo');
+        // No changes to save, show message and stay on page
+        console.log('✅ No changes to save - content already auto-saved');
+        // You could show a toast notification here: "No changes to save"
         return;
       }
       
@@ -201,14 +245,8 @@ const BlogPostEditorPage = () => {
         content: hasContentChanged ? content : undefined,
       });
       
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['geoBlogPosts']);
-      queryClient.invalidateQueries(['blogPost', blogPostSlug]);
-      
-      // Ensure the cache is fresh before navigating back
-      await queryClient.refetchQueries(['geoBlogPosts']);
-      
-      // Redirect back to GEO page
+      // The useUpdateBlogPost hook already handles cache invalidation in onSuccess
+      // Navigate immediately after successful mutation
       navigate('/dashboard/geo');
       
     } catch (error) {
@@ -218,8 +256,7 @@ const BlogPostEditorPage = () => {
   };
 
   const handleCancel = () => {
-    // Ensure the GEO cache is fresh before navigating back
-    queryClient.invalidateQueries(['geoBlogPosts']);
+    // Navigate immediately - no need to invalidate cache for cancel
     navigate('/dashboard/geo');
   };
 
@@ -232,10 +269,8 @@ const BlogPostEditorPage = () => {
       await deleteBlogPostMutation.mutateAsync(blogPost.id);
       setShowDeletePopup(false);
       
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['geoBlogPosts']);
-      
-      // Redirect back to GEO page
+      // Navigate immediately after successful deletion
+      // The delete mutation hook should handle cache invalidation
       navigate('/dashboard/geo');
     } catch (error) {
       console.error('Failed to delete blog post:', error);
@@ -261,17 +296,7 @@ const BlogPostEditorPage = () => {
     }
   };
 
-  // Show loading state only if we don't have any data and are actually loading
-  if (isLoading && !blogPost) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading blog post...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   // Show error state only if we don't have cached data
   if (error && !blogPost) {
@@ -290,8 +315,8 @@ const BlogPostEditorPage = () => {
     );
   }
 
-  // Blog post not found
-  if (!blogPost) {
+  // Blog post not found - only show this if we're not loading and definitely don't have a blog post
+  if (!blogPost && !isLoading && !error) {
     return (
       <div className="bg-white h-full w-full">
         {/* Header */}
@@ -351,7 +376,11 @@ const BlogPostEditorPage = () => {
             </svg>
           </button>
           <h2 className="text-2xl font-bold text-gray-900">
-            {blogPost.title || 'Untitled Blog Post'}
+            {isLoading ? (
+              <div className="h-8 bg-gray-200 rounded animate-pulse w-48"></div>
+            ) : (
+              blogPost?.title || 'Untitled Blog Post'
+            )}
           </h2>
         </div>
         <div className="flex items-center gap-3">
@@ -365,15 +394,9 @@ const BlogPostEditorPage = () => {
             }`}
           >
             {updateBlogPostMutation.isPending ? 'Saving...' : 'Save'}
-            {isLoading && blogPost && !updateBlogPostMutation.isPending && (
-              <span className="ml-2 inline-flex items-center">
-                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              </span>
-            )}
           </button>
           
-          {/* Auto-saved indicator */}
-          {/* Removed as per edit hint */}
+
           
           <button
             onClick={handleCancel}
@@ -398,11 +421,6 @@ const BlogPostEditorPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             )}
-            {isLoading && blogPost && !deleteBlogPostMutation.isPending && (
-              <span className="ml-2 inline-flex items-center">
-                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              </span>
-            )}
           </button>
         </div>
       </div>
@@ -416,10 +434,11 @@ const BlogPostEditorPage = () => {
           onTitleChange={handleTitleChange}
           onContentChange={handleContentChange}
           error={updateBlogPostMutation.error}
+          isLoading={isLoading}
         />
 
         {/* Preview Section */}
-        <Preview content={content} />
+        <Preview content={content} isLoading={isLoading} />
       </div>
 
       {/* Delete Confirmation Popup */}
