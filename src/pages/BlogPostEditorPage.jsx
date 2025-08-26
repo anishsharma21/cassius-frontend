@@ -22,6 +22,8 @@ const BlogPostEditorPage = () => {
   const [originalTitle, setOriginalTitle] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [isReceivingContent, setIsReceivingContent] = useState(false); // Track if actively receiving content
+  const [isManualSaving, setIsManualSaving] = useState(false); // Track only manual save operations
 
   
   const updateBlogPostMutation = useUpdateBlogPost();
@@ -35,11 +37,11 @@ const BlogPostEditorPage = () => {
       // First, check if we have pre-fetched data in the cache
       const cachedData = queryClient.getQueryData(['blogPost', blogPostSlug]);
       if (cachedData) {
-        console.log('✅ Using cached data for:', blogPostSlug);
+        console.log('Using cached data for:', blogPostSlug);
         return cachedData;
       }
       
-      console.log('🌐 Fetching from database for:', blogPostSlug);
+      console.log('Fetching from database for:', blogPostSlug);
       // If no cached data, fetch from the database
       const response = await fetch(`${API_ENDPOINTS.getBlogPost}/slug/${blogPostSlug}`, {
         headers: {
@@ -94,98 +96,77 @@ const BlogPostEditorPage = () => {
 
   // Check if this is a newly created blog post that should receive streaming content
   useEffect(() => {
-    const streamingBlogPost = localStorage.getItem('streamingBlogPost');
-    if (streamingBlogPost && blogPost) {
-      try {
-        const { slug, timestamp } = JSON.parse(streamingBlogPost);
-        console.log('🔍 Checking streaming blog post:', { slug, timestamp, currentSlug: blogPost.slug });
-        
-        // Check if this is the same blog post and it was created recently
-        if (slug === blogPost.slug && (Date.now() - timestamp) < 30000) {
-          console.log('✅ Starting content stream for blog post:', slug);
-          const cleanup = startContentStream();
-          return cleanup; // Return cleanup function to useEffect
-        } else {
-          console.log('⚠️ Blog post mismatch or expired:', { 
-            slug, 
-            blogPostSlug: blogPost.slug, 
-            timeDiff: Date.now() - timestamp,
-            isRecent: (Date.now() - timestamp) < 30000
-          });
-        }
-      } catch (error) {
-        console.error('Error parsing streaming blog post data:', error);
-        localStorage.removeItem('streamingBlogPost');
-      }
+    if (blogPost && blogPost.content === '' && blogPost.company_id === null) {
+      // This is a new blog post waiting for AI content, start listening for content updates
+      console.log('✅ Starting content stream for new blog post:', blogPost.slug);
+      setIsReceivingContent(true);
+      const cleanup = startContentStream();
+      return cleanup; // Return cleanup function to useEffect
     } else {
-      console.log('🔍 No streaming blog post found or no blog post loaded yet');
+      console.log('🔍 Blog post has content or is not new, no streaming needed');
+      setIsReceivingContent(false);
     }
   }, [blogPost]);
 
-  // Simple content stream function
+  // Simplified content stream function
   const startContentStream = () => {
+    let lastContentLength = 0;
+    let noUpdateCount = 0;
     
-    // Simple interval to check for content updates and end markers
+    // Check for content updates every 100ms
     const interval = setInterval(async () => {
       // Check for content updates
       const currentContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
       if (currentContent) {
-        setContent(currentContent);
-        setOriginalContent(currentContent);
-      }
-      
-      // Check for end marker - this is the key signal to auto-save
-      const endMarker = localStorage.getItem(`blogPostEndMarker_${blogPost.slug}`);
-      if (endMarker === 'true') {
-        console.log('🎯 BLOG_CONTENT_END marker detected, starting auto-save for slug:', blogPost.slug);
-        const finalContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
-        if (finalContent) {
-          console.log('📝 Final content found, calling autoSaveBlogPost');
-          console.log('📊 Content length:', finalContent.length);
-          console.log('📄 Content preview:', finalContent.substring(0, 100) + '...');
-          
-          // Call auto-save and wait for it to complete
-          await autoSaveBlogPost(finalContent);
-          
-          // Clean up after auto-save is complete
-          localStorage.removeItem('streamingBlogPost');
-          localStorage.removeItem(`blogPostContent_${blogPost.slug}`);
-          localStorage.removeItem(`blogPostEndMarker_${blogPost.slug}`);
-          
-          clearInterval(interval);
-          console.log('🧹 Cleanup completed for slug:', blogPost.slug);
+        const newContentLength = currentContent.length;
+        
+        if (newContentLength !== lastContentLength) {
+          // Content has been updated
+          setContent(currentContent);
+          setOriginalContent(currentContent);
+          lastContentLength = newContentLength;
+          noUpdateCount = 0; // Reset no-update counter
+          console.log('📝 Content updated:', newContentLength, 'characters');
         } else {
-          console.log('⚠️ No final content found for slug:', blogPost.slug);
-        }
-      }
-      
-      // Also check if streaming has been marked as complete (isStreaming: false)
-      const streamingBlogPost = localStorage.getItem('streamingBlogPost');
-      if (streamingBlogPost) {
-        try {
-          const { slug, isStreaming } = JSON.parse(streamingBlogPost);
-          if (slug === blogPost.slug && !isStreaming) {
-            console.log('🔄 Streaming marked as complete, ensuring content is saved...');
-            const finalContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
-            if (finalContent) {
+          // No new content, increment counter
+          noUpdateCount++;
+          
+          // If no updates for 1 second (10 * 100ms), assume streaming is complete
+          if (noUpdateCount >= 10) {
+            console.log('🎯 No content updates for 1 second, assuming streaming complete');
+            
+            if (currentContent && currentContent.length > 0) {
               console.log('📝 Final content found, calling autoSaveBlogPost');
-              console.log('📊 Content length:', finalContent.length);
-              console.log('📄 Content preview:', finalContent.substring(0, 100) + '...');
+              console.log('📊 Content length:', currentContent.length);
+              console.log('📄 Content preview:', currentContent.substring(0, 100) + '...');
               
               // Call auto-save and wait for it to complete
-              await autoSaveBlogPost(finalContent);
+              await autoSaveBlogPost(currentContent);
               
               // Clean up after auto-save is complete
-              localStorage.removeItem('streamingBlogPost');
               localStorage.removeItem(`blogPostContent_${blogPost.slug}`);
-              localStorage.removeItem(`blogPostEndMarker_${blogPost.slug}`);
+              
+              // Reset streaming state
+              setIsReceivingContent(false);
               
               clearInterval(interval);
               console.log('🧹 Cleanup completed for slug:', blogPost.slug);
+            } else {
+              console.log('⚠️ No content found, stopping stream monitoring');
+              setIsReceivingContent(false);
+              clearInterval(interval);
             }
           }
-        } catch (error) {
-          console.error('Error checking streaming state:', error);
+        }
+      } else {
+        // No content in localStorage, increment counter
+        noUpdateCount++;
+        
+        // If no content for 1 second (10 * 100ms), stop monitoring
+        if (noUpdateCount >= 10) {
+          console.log('⚠️ No content found in localStorage, stopping stream monitoring');
+          setIsReceivingContent(false);
+          clearInterval(interval);
         }
       }
     }, 100);
@@ -375,13 +356,15 @@ const BlogPostEditorPage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isLoading ? (
-              <div className="h-8 bg-gray-200 rounded animate-pulse w-48"></div>
-            ) : (
-              blogPost?.title || 'Untitled Blog Post'
-            )}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {isLoading ? (
+                <div className="h-8 bg-gray-200 rounded animate-pulse w-48"></div>
+              ) : (
+                blogPost?.title || 'Untitled Blog Post'
+              )}
+            </h2>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -393,7 +376,11 @@ const BlogPostEditorPage = () => {
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
           >
-            {updateBlogPostMutation.isPending ? 'Saving...' : 'Save'}
+            {updateBlogPostMutation.isPending ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              'Save'
+            )}
           </button>
           
 
