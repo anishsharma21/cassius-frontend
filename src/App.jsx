@@ -6,12 +6,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 import PrivateRoute from './components/route_guards/PrivateRoute';
 import PublicRoute from './components/route_guards/PublicRoute';
-import Landing from './pages/Landing';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import DashboardLayout from './layouts/DashboardLayout';
-import DashboardHome from './pages/DashboardHome';
-import Reddit from './pages/Reddit';
+import Reddit from './pages/Reddit/Reddit';
 import Strategy from './pages/Strategy';
 import GEO from './pages/GEO';
 import Partnerships from './pages/Partnerships';
@@ -19,10 +17,52 @@ import CompanyProfile from './pages/CompanyProfile';
 import Guide from './pages/Guide';
 import Feedback from './pages/Feedback';
 import BlogPostEditorPage from './pages/BlogPostEditorPage';
+import { resetRedirectFlag, logout } from './utils/auth';
+import { setupApiInterceptor } from './utils/apiInterceptor';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        // Don't retry on 401 errors - user will be logged out
+        if (error?.status === 401 || error?.message === 'Unauthorized') {
+          return false;
+        }
+        // Retry other errors up to 2 times
+        return failureCount < 2;
+      },
+      onError: (error) => {
+        // Handle 401 errors globally
+        if (error?.status === 401 || error?.message === 'Unauthorized') {
+          console.log('React Query 401 error detected, logging out user');
+          logout();
+        }
+      },
+    },
+    mutations: {
+      onError: (error) => {
+        // Handle 401 errors globally for mutations
+        if (error?.status === 401 || error?.message === 'Unauthorized') {
+          console.log('React Query mutation 401 error detected, logging out user');
+          logout();
+        }
+      },
+    },
+  },
+});
+
+// Make queryClient globally available for auth utilities
+if (typeof window !== 'undefined') {
+  window.queryClient = queryClient;
+}
 
 function App() {
+  // Reset redirect flag and setup API interceptor when app mounts
+  React.useEffect(() => {
+    resetRedirectFlag();
+    setupApiInterceptor();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>

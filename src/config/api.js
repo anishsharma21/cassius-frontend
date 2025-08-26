@@ -17,6 +17,11 @@ export const API_ENDPOINTS = {
   createBlogPost: `${API_BASE_URL}/companies/create-blog-post`,
   deleteBlogPost: `${API_BASE_URL}/companies/delete-blog-post`,
   getBlogPost: `${API_BASE_URL}/companies/blog_posts`,
+  // Corrected: GEO search terms route matches backend prefix /companies
+  geoSearchTerms: `${API_BASE_URL}/companies/search-terms`,
+  redditPosts: `${API_BASE_URL}/reddit/next-10-posts`,
+  redditComments: `${API_BASE_URL}/reddit/comments`,
+  updateRedditRepliedTo: `${API_BASE_URL}/reddit/update-replied-to`,
 };
 
 export default API_ENDPOINTS;

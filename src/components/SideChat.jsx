@@ -30,37 +30,55 @@ const SideChat = () => {
 
   // Listen for new Reddit post messages and guide prompts
   useEffect(() => {
-    const handleGuidePrompt = async (content) => {
+    const handleGuidePrompt = async (content, redditLink = null, contentType = null) => {
+      console.log('📝 Creating user message with Reddit info:', { content, redditLink, contentType });
       const userMessage = {
         id: `user_${Date.now()}_${++messageIdCounter.current}`,
         type: 'user',
         content: content,
-        timestamp: new Date()
+        timestamp: new Date(),
+        redditLink: redditLink,
+        contentType: contentType
       };
+      
+      console.log('👤 User message created:', userMessage);
       
       // Add user message to conversation
       setConversation(prev => [...prev, userMessage]);
       
       // Generate AI response
-      await generateAIResponse(content);
+      await generateAIResponse(content, redditLink, contentType);
+    };
+
+    const handleRedditReplyPrompt = (event) => {
+      console.log('🔴 Reddit reply prompt received:', event.detail);
+      const promptData = event.detail;
+      // Clear the guide prompt from localStorage
+      localStorage.removeItem('guidePrompt');
+      // Immediately submit the guide prompt with Reddit link info
+      handleGuidePrompt(promptData.content, promptData.redditLink, promptData.contentType);
     };
 
     const handleStorageChange = () => {
       // Check for guide prompts
       const guidePrompt = localStorage.getItem('guidePrompt');
       if (guidePrompt) {
+        console.log('📦 Guide prompt from localStorage:', guidePrompt);
         const promptData = JSON.parse(guidePrompt);
         // Clear the guide prompt from localStorage
         localStorage.removeItem('guidePrompt');
         
         // Immediately submit the guide prompt without populating input
-        handleGuidePrompt(promptData.content);
+        handleGuidePrompt(promptData.content, promptData.redditLink, promptData.contentType);
       }
     };
 
     // Check for existing messages on mount
     handleStorageChange();
 
+    // Listen for custom Reddit reply events (instant)
+    window.addEventListener('redditReplyPrompt', handleRedditReplyPrompt);
+    
     // Listen for storage events
     window.addEventListener('storage', handleStorageChange);
     
@@ -68,6 +86,7 @@ const SideChat = () => {
     const interval = setInterval(handleStorageChange, 1000);
 
     return () => {
+      window.removeEventListener('redditReplyPrompt', handleRedditReplyPrompt);
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
@@ -129,7 +148,7 @@ const SideChat = () => {
   };
 
   // Generate AI response from API with streaming
-  const generateAIResponse = useCallback(async (userPrompt) => {
+  const generateAIResponse = useCallback(async (userPrompt, redditLink = null, contentType = null) => {
     // Create AI message placeholder early so it's available in catch block
     const aiMessageId = `ai_${Date.now()}_${++messageIdCounter.current}`;
     const aiMessage = {
@@ -137,8 +156,12 @@ const SideChat = () => {
       type: 'ai',
       content: '',
       timestamp: new Date(),
-      isStreaming: true
+      isStreaming: true,
+      redditLink: redditLink,
+      contentType: contentType
     };
+    
+    console.log('🤖 Creating AI message with Reddit context:', { redditLink, contentType });
     
     // Add AI message to conversation
     setConversation(prev => [...prev, aiMessage]);
@@ -475,8 +498,8 @@ const SideChat = () => {
               <div className="flex justify-start">
                 <div className="rounded-lg bg-white w-full">
                   <div className="text-base font-normal text-black leading-relaxed font-sans">
-                    {message.isStreaming ? (
-                      // Show streaming message with shining effect
+                    {message.isStreaming && (!message.content || message.content === 'Thinking' || message.content === 'Generating blog content') ? (
+                      // Show streaming message with shining effect (only for placeholder messages)
                       <div className="relative overflow-hidden">
                         <span className="text-gray-600 font-medium">
                           {message.content || 'Thinking'}
@@ -484,10 +507,37 @@ const SideChat = () => {
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shine"></div>
                       </div>
                     ) : (
-                      // Show regular content when not streaming
+                      // Show regular content (including streaming content that's not placeholder text)
                       message.content && (
                         <div className="markdown-content">
                           {renderFormattedText(message.content)}
+                          
+                          {/* Show "Copy and go to Reddit" button for Reddit reply messages after AI response */}
+                          {message.type === 'ai' && !message.isStreaming && message.redditLink && message.contentType && (
+                            <div className="mt-3">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(message.content);
+                                    console.log('✅ Response copied to clipboard');
+                                    // Open Reddit link after copying
+                                    window.open(message.redditLink, '_blank');
+                                  } catch (error) {
+                                    console.error('❌ Failed to copy to clipboard:', error);
+                                    // Still open Reddit link even if copying fails
+                                    window.open(message.redditLink, '_blank');
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-md transition-colors cursor-pointer flex items-center gap-2"
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 1024 1024">
+                                  <path d="M768 832a128 128 0 0 1-128 128H192A128 128 0 0 1 64 832V384a128 128 0 0 1 128-128v64a64 64 0 0 0-64 64v448a64 64 0 0 0 64 64h448a64 64 0 0 0 64-64h64z"/>
+                                  <path d="M384 128a64 64 0 0 0-64 64v448a64 64 0 0 0 64 64h448a64 64 0 0 0 64-64V192a64 64 0 0 0-64-64H384zm0-64h448a128 128 0 0 1 128 128v448a128 128 0 0 1-128 128H384a128 128 0 0 1-128-128V192A128 128 0 0 1 384 64z"/>
+                                </svg>
+                                Copy & go to Reddit
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )
                     )}
@@ -496,8 +546,9 @@ const SideChat = () => {
               </div>
             )}
           </div>
-        ))}
+        )        )}
         
+
 
       </div>
 

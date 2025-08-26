@@ -148,7 +148,7 @@ End your post with a strong conclusion.`;
               ref={textareaRef}
               value={content}
               onChange={(e) => onContentChange(e.target.value)}
-              className={`w-full border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm resize-none ${
+              className={`w-full p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm resize-none ${
                 error ? "border-red-300" : "border-gray-300"
               }`}
               placeholder={placeholderText}

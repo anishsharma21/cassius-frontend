@@ -135,12 +135,12 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
   return (
     <aside 
       className={`bg-gray-100 flex flex-col justify-between px-4 py-4 transition-all duration-300 ease-in-out overflow-hidden ${
-        isCollapsed ? 'w-16' : 'w-96'
+        isCollapsed ? 'w-16' : 'w-auto'
       }`}
       style={{
-        width: isCollapsed ? '64px' : '220px',
-        maxWidth: isCollapsed ? '64px' : '384px',
-        minWidth: isCollapsed ? '64px' : '220px'
+        width: isCollapsed ? '64px' : 'auto',
+        maxWidth: isCollapsed ? '64px' : '400px',
+        minWidth: isCollapsed ? '64px' : '200px'
       }}
     >
       <div>
@@ -182,7 +182,7 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
                   isLoadingCompany ? (
                     <div className="h-5 bg-gray-300 rounded animate-pulse" style={{ width: '100px' }}></div>
                   ) : (
-                    <h2 className="px-1 text-base font-normal text-black whitespace-nowrap overflow-hidden text-ellipsis">
+                    <h2 className="px-1 text-base font-normal text-black whitespace-nowrap">
                       {company?.name || 'Company'}
                     </h2>
                   )
@@ -194,7 +194,7 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
                {!isCollapsed && (
                  <button
                    onClick={onToggle}
-                   className="ml-2 p-1.5 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
+                   className="ml-auto p-1.5 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
                    title="Collapse sidebar"
                  >
                 <svg 

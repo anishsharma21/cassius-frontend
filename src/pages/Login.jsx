@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API_ENDPOINTS from '../config/api';
 import cassiusLogo from '../assets/cassius.png';
+import { resetRedirectFlag } from '../utils/auth';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -66,6 +67,9 @@ function Login() {
 
       // Store only the access token in localStorage
       localStorage.setItem('access_token', data.access_token);
+
+      // Reset redirect flag after successful login
+      resetRedirectFlag();
 
       navigate('/dashboard');
     } catch (error) {

@@ -1,14 +1,19 @@
 import { jwtDecode } from "jwt-decode";
 
+// Global flag to prevent multiple redirects
+let isRedirecting = false;
+
 export function logout() {
   // Clear only the access token from localStorage
   localStorage.removeItem('access_token');
   
   // Clear React Query cache if queryClient is available
-  // This will be called from components that have access to queryClient
   if (typeof window !== 'undefined' && window.queryClient) {
     window.queryClient.clear();
   }
+  
+  // Redirect to login page
+  window.location.href = '/login';
 }
 
 export function clearQueryCache(queryClient) {
@@ -32,6 +37,41 @@ export function handleUnauthorizedResponse(queryClient) {
   
   // Redirect to login page
   window.location.href = '/login';
+}
+
+// Global fetch wrapper that automatically handles 401 responses
+export async function authFetch(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    
+    // Check for 401 Unauthorized
+    if (response.status === 401) {
+      if (!isRedirecting) {
+        isRedirecting = true;
+        console.log('401 Unauthorized detected, redirecting to login');
+        
+        // Clear auth data
+        localStorage.removeItem('access_token');
+        
+        // Redirect to login
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized');
+    }
+    
+    return response;
+  } catch (error) {
+    if (error.message === 'Unauthorized') {
+      throw error;
+    }
+    // Re-throw other errors
+    throw error;
+  }
+}
+
+// Function to reset redirect flag (useful after successful login)
+export function resetRedirectFlag() {
+  isRedirecting = false;
 }
 
 export function getAuthStatus() {

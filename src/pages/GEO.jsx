@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useGeoBlogPosts } from '../hooks/useGeoBlogPosts';
 import { useCreateBlogPost } from '../hooks/useCreateBlogPost';
 import GeoBlogTile from '../components/GeoBlogTile';
-import KeywordTile from '../components/KeywordTile';
-import { useQueryClient } from '@tanstack/react-query';
+import SearchTerm from '../components/SearchTerm';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import API_ENDPOINTS from '../config/api';
 
 function GEO() {
@@ -17,21 +17,23 @@ function GEO() {
   // Create blog post mutation
   const createBlogPostMutation = useCreateBlogPost();
 
-  // Sample SEO keywords data with ranks (1 = best, higher = worse)
-  const sampleKeywords = [
-    { keyword: "Geographic Information Systems", rank: 1 },
-    { keyword: "Spatial Analytics", rank: 2 },
-    { keyword: "Remote Sensing", rank: 3 },
-    { keyword: "Cartography", rank: 4 },
-    { keyword: "Geospatial Data", rank: 5 },
-    { keyword: "Satellite Imagery", rank: 6 },
-    { keyword: "Environmental Monitoring", rank: 7 },
-    { keyword: "Urban Planning", rank: 8 },
-    { keyword: "Climate Mapping", rank: 9 },
-    { keyword: "Data Visualization", rank: 10 },
-    { keyword: "Topographic Analysis", rank: 11 },
-    { keyword: "Geodetic Surveying", rank: 12 }
-  ];
+  // Fetch search terms using React Query
+  const { data: searchTerms, isLoading: isLoadingTerms, error: termsError } = useQuery({
+    queryKey: ['geoSearchTerms'],
+    queryFn: async () => {
+      const response = await fetch(API_ENDPOINTS.geoSearchTerms, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch search terms');
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   const handleBlogClick = (blogPost) => {
     // Pre-fetch the blog post data before navigation for faster loading
@@ -54,9 +56,9 @@ function GEO() {
     navigate(`/dashboard/geo/${blogPost.slug}`);
   };
 
-  const handleKeywordClick = (keyword) => {
-    console.log(`Keyword clicked: ${keyword}`);
-    // Handle keyword filtering or search
+  const handleTermClick = (term) => {
+    console.log(`Search term clicked: ${term.term}`);
+    // TODO: Handle filtering or actions for the selected search term
   };
 
   const handleCreateBlogPost = async () => {
@@ -85,42 +87,57 @@ function GEO() {
       <div className="p-6">
         {/* Page Header */}
         <div className="mb-12">
-          <h1 className="text-3xl font-bold mb-2">GEO Hub</h1>
+          <h1 className="text-3xl font-bold mb-1">GEO Hub</h1>
           <p className="text-gray-600">Create generative-engine-optimized content for your business</p>
         </div>
 
         {/* Keywords Section */}
         <div className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">Search Terms</h2>
-          <div className="flex flex-wrap gap-3">
-            {sampleKeywords.map((item, index) => (
-              <KeywordTile
-                key={index}
-                keyword={item.keyword}
-                rank={item.rank}
-                onClick={() => handleKeywordClick(item.keyword)}
-              />
-            ))}
-          </div>
+          <h2 className="text-2xl font-semibold mb-1">Search Terms</h2>
+          <p className="text-gray-600 mb-6">See how your website ranks online</p>
+          {isLoadingTerms && (
+            <div className="flex flex-wrap gap-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="rounded-3xl px-8 py-4 bg-gray-200 animate-pulse" />
+              ))}
+            </div>
+          )}
+          {termsError && (
+            <div className="text-red-600">Failed to load search terms</div>
+          )}
+          {searchTerms && searchTerms.length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {searchTerms
+                .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999))
+                .map((item, index) => {
+                  console.log(`SearchTerm ${index}: term="${item.term}", rank=${item.rank}, type=${typeof item.rank}`);
+                  return (
+                    <SearchTerm
+                      key={item.id || `${item.term}-${index}`}
+                      term={item.term}
+                      rank={item.rank}
+                      onClick={() => handleTermClick(item)}
+                    />
+                  );
+                })}
+            </div>
+          )}
         </div>
 
         {/* Blog Posts Section */}
         <div className="mb-12">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-1">
             <h2 className="text-2xl font-semibold">Blog Posts</h2>
             <div className="relative group">
               <button
                 onClick={handleCreateBlogPost}
                 disabled={createBlogPostMutation.isPending}
-                className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50 transition-colors cursor-pointer"
+                className="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {createBlogPostMutation.isPending ? (
                   <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                    <path fill="#0F0F0F" d="M11 8a1 1 0 1 1 2 0v3h3a1 1 0 1 1 0 2h-3v3a1 1 0 1 1-2 0v-3H8a1 1 0 1 1 0-2h3V8Z"/>
-                    <path fill="#0F0F0F" fill-rule="evenodd" d="M23 12c0 6.075-4.925 11-11 11S1 18.075 1 12 5.925 1 12 1s11 4.925 11 11ZM3.007 12a8.993 8.993 0 1 0 17.986 0 8.993 8.993 0 0 0-17.986 0Z" clip-rule="evenodd"/>
-                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 21 21"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V11"/><path d="M17.5 3.467a1.462 1.462 0 0 1-.017 2.05L10.5 12.5l-3 1 1-3 6.987-7.046a1.409 1.409 0 0 1 1.885-.104zM15.5 5.5l.953 1"/></g></svg>
                 )}
               </button>
               
@@ -129,7 +146,9 @@ function GEO() {
                 New blog post
               </div>
             </div>
+            
           </div>
+          <p className="text-gray-600 mb-6">Add blog posts to your website to increase visibility</p>
           
           {isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -158,12 +177,12 @@ function GEO() {
               {blogPosts
                 .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
                 .map((blog) => (
-                                      <GeoBlogTile
-                      key={blog.id}
-                      title={blog.title}
-                      lastUpdated={blog.updated_at}
-                      onClick={() => handleBlogClick(blog)}
-                    />
+                  <GeoBlogTile
+                    key={blog.id}
+                    title={blog.title}
+                    lastUpdated={blog.updated_at}
+                    onClick={() => handleBlogClick(blog)}
+                  />
                 ))}
             </div>
           )}
