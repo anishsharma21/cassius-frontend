@@ -5,11 +5,11 @@ const RedditMetrics = () => {
   // Metrics data
   const metrics = [
     {
-      title: "Found Leads",
+      title: "Leads Found",
       value: "127"
     },
     {
-      title: "Replied Leads",
+      title: "Leads Replied",
       value: "82"
     }
   ];

@@ -61,8 +61,7 @@ const DataTable = ({
     <div className="bg-white rounded-lg shadow-md border border-gray-100">
       <TableHeader title={title} actions={actions} />
 
-      <div className="overflow-x-auto">
-        <div className="min-w-full">
+      <div className="w-full">
           <TableHead columns={columns} showCheckboxes={showCheckboxes} />
           
           <div>
@@ -91,7 +90,6 @@ const DataTable = ({
               );
             })}
           </div>
-        </div>
       </div>
 
       {/* Pagination Controls */}

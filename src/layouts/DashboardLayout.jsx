@@ -95,7 +95,9 @@ const DashboardLayout = () => {
       return response.json();
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    retry: 1, // Limit retries to prevent infinite loops
+    retryDelay: 1000
   });
 
   // Fetch user data using React Query
@@ -121,7 +123,9 @@ const DashboardLayout = () => {
       return response.json();
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    retry: 1, // Limit retries to prevent infinite loops
+    retryDelay: 1000
   });
   
   // Check if user is new and redirect to guide
@@ -132,15 +136,17 @@ const DashboardLayout = () => {
       localStorage.removeItem('isNewUser');
       navigate('/dashboard/guide', { replace: true });
     }
-  }, [navigate, location.pathname]);
+  }, [navigate]); // Removed location.pathname dependency
 
   // Debug logging for initial state
-  console.log('DashboardLayout mounted with:', {
-    companyData: company,
-    userData: user,
-    isLoadingCompany: isLoadingCompany,
-    isLoadingUser: isLoadingUser
-  });
+  useEffect(() => {
+    console.log('DashboardLayout mounted with:', {
+      companyData: company,
+      userData: user,
+      isLoadingCompany: isLoadingCompany,
+      isLoadingUser: isLoadingUser
+    });
+  }, [company, user, isLoadingCompany, isLoadingUser]);
 
   const handleMouseDown = (e) => {
     setIsDragging(true);
