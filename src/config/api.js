@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
   redditPosts: `${API_BASE_URL}/reddit/next-10-posts`,
   redditComments: `${API_BASE_URL}/reddit/comments`,
   updateRedditRepliedTo: `${API_BASE_URL}/reddit/update-replied-to`,
+  partnerships: {
+    getInfluencers: `${API_BASE_URL}/partnerships/get-influencers`,
+  },
 };
 
 export default API_ENDPOINTS;
