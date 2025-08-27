@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import EditableField from '../../components/EditableField';
 import { FileTile, FileUploadModal } from './components';
-import { useEditableField } from '../../hooks/useEditableField';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import API_ENDPOINTS from '../../config/api';
 
@@ -86,70 +84,8 @@ const CompanyProfile = () => {
     console.log('CompanyProfile render - company data:', company);
     console.log('CompanyProfile render - isLoading:', isLoading);
     console.log('CompanyProfile render - error:', error);
-    
-    // Always call hooks at the top level, before any conditional returns
-    const initialValues = company ? {
-        name: company.name || '',
-        description: company.description || '',
-        targetMarket: company.target_market || '',
-        website: company.website_url || ''
-    } : {
-        name: '',
-        description: '',
-        targetMarket: '',
-        website: ''
-    };
 
-    const handleSaveField = async (fieldName, value) => {
-        try {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
 
-            // Map frontend field names back to backend field names
-            const fieldMapping = {
-                name: 'name',
-                description: 'description',
-                targetMarket: 'target_market',
-                website: 'website_url'
-            };
-
-            const backendFieldName = fieldMapping[fieldName];
-            if (!backendFieldName) {
-                throw new Error(`Unknown field: ${fieldName}`);
-            }
-
-            // Only send the specific field that changed
-            const payload = {
-                [backendFieldName]: value
-            };
-
-            const response = await fetch(API_ENDPOINTS.updateCompany, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Authentication failed. Please log in again.');
-                }
-                throw new Error(`Failed to update ${fieldName}`);
-            }
-
-            // Invalidate and refetch the company data to keep React Query in sync
-            queryClient.invalidateQueries({ queryKey: ['company'] });
-            
-            console.log(`Successfully updated ${fieldName}`);
-        } catch (error) {
-            console.error('Error updating company field:', error);
-            throw error; // Re-throw so the hook can handle it
-        }
-    };
 
     const handleUploadClick = () => {
         setIsUploadModalOpen(true);
@@ -250,40 +186,21 @@ const CompanyProfile = () => {
         return `${Math.ceil(diffDays / 365)} year${Math.ceil(diffDays / 365) === 1 ? '' : 's'} ago`;
     };
 
-    const {
-        editingField,
-        editValues,
-        handleEdit,
-        handleCancel,
-        handleUpdate,
-        handleInputChange
-    } = useEditableField(initialValues, handleSaveField);
 
-    // Update edit values when company data changes (only on initial load or data refresh)
-    useEffect(() => {
-        if (company && !editingField) { // Only update when not editing
-            const newValues = {
-                name: company.name || '',
-                description: company.description || '',
-                targetMarket: company.target_market || '',
-                website: company.website_url || ''
-            };
-            // Update each field if it's different
-            Object.keys(newValues).forEach(key => {
-                if (editValues[key] !== newValues[key]) {
-                    handleInputChange(key, newValues[key]);
-                }
-            });
-        }
-    }, [company]); // Remove editValues and handleInputChange from dependencies
 
     // Simple fallback to ensure component renders something
     if (error) {
         console.error('CompanyProfile error:', error);
         return (
-            <div>
-                <h1>Error Loading Company Profile</h1>
-                <p>Error: {error.message}</p>
+            <div className="p-6">
+                <div className="mb-12">
+                    <h1 className="text-3xl font-bold mb-1">Company Profile</h1>
+                    <p className="text-gray-600">Update your company profile to help Cassius understand your business</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                    <h2 className="text-red-800 mb-4">Error Loading Company Profile</h2>
+                    <p className="text-red-600 text-sm">Error: {error.message}</p>
+                </div>
             </div>
         );
     }
@@ -291,8 +208,11 @@ const CompanyProfile = () => {
     // Show skeleton loading while waiting for data
     if (isLoading || !company) {
         return (
-            <div>
-                <p className='text-lg font-medium'>Company Details</p>
+            <div classname="p-6">
+                <div className="mb-12">
+                    <h1 className="text-3xl font-bold mb-1">Company Profile</h1>
+                    <p className="text-gray-600">Update your company profile to help Cassius understand your business</p>
+                </div>
                 <br></br>
                 <div style={{ maxWidth: '800px', marginLeft: '1rem', marginRight: '1rem' }}>
                     <div style={{ 
@@ -334,20 +254,23 @@ const CompanyProfile = () => {
                 <br></br>
                 <br></br>
                 <div className="flex items-center gap-3">
-                    <p className='text-lg font-medium'>Company Files</p>
+                    <h2 className="text-2xl font-semibold mb-1">Company Files</h2>
                     <div className="relative group">
-                        <svg 
-                            className="cursor-pointer" 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="22" 
-                            height="22" 
-                            fill="none" 
-                            viewBox="0 0 24 24"
+                        <button
                             onClick={handleUploadClick}
+                            className="p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                         >
-                            <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21.96 13.42a5 5 0 0 0-4.31-4.34A6 6 0 0 0 6 11.02a4 4 0 1 0 0 8h6M18.78 23v-8"/>
-                            <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m15.58 18.2 3.2-3.2 3.2 3.2"/>
-                        </svg>
+                            <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                width="26" 
+                                height="26" 
+                                fill="none" 
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21.96 13.42a5 5 0 0 0-4.31-4.34A6 6 0 0 0 6 11.02a4 4 0 1 0 0 8h6M18.78 23v-8"/>
+                                <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m15.58 18.2 3.2-3.2 3.2 3.2"/>
+                            </svg>
+                        </button>
                         <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                             Upload files
                         </div>
@@ -371,13 +294,18 @@ const CompanyProfile = () => {
 
 
     return (
-        <div>
-            <p className='text-lg font-medium'>Company Details</p>
+        <div className="p-6">
+            <div className="mb-12">
+                <h1 className="text-3xl font-bold mb-1">Company Profile</h1>
+                <p className="text-gray-600">Update your company profile to help Cassius understand your business</p>
+            </div>
+            
+            <h2 className="text-2xl font-semibold mb-1">Company Details</h2>
             <br></br>
             <div style={{ maxWidth: '800px', marginLeft: '1rem', marginRight: '1rem' }}>
                 <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: '120px 1fr 80px',
+                    gridTemplateColumns: '120px 1fr',
                     gap: '1rem',
                     padding: '1rem',
                     border: '1px solid #ddd',
@@ -385,83 +313,73 @@ const CompanyProfile = () => {
                     backgroundColor: '#f9f9f9',
                     alignItems: 'center'
                 }}>
-                                        {/* Sample Data Rows */}
-                    <div style={{ padding: '0.5rem' }}>
-                        Name
-                    </div>
-                    <EditableField
-                        fieldName="name"
-                        value={editValues.name}
-                        isEditing={editingField === 'name'}
-                        onEdit={handleEdit}
-                        onCancel={handleCancel}
-                        onUpdate={handleUpdate}
-                        onChange={handleInputChange}
-                        isLoading={false}
-                    />
+                    {/* Company Details Display - Only show fields with values */}
+                    {company.name && (
+                        <>
+                            <div style={{ padding: '0.5rem', fontWeight: '500' }}>
+                                Name
+                            </div>
+                            <div style={{ padding: '0.5rem' }}>
+                                {company.name}
+                            </div>
+                        </>
+                    )}
                     
-                    <div style={{ padding: '0.5rem' }}>
-                        Description
-                    </div>
-                    <EditableField
-                        fieldName="description"
-                        value={editValues.description}
-                        isEditing={editingField === 'description'}
-                        onEdit={handleEdit}
-                        onCancel={handleCancel}
-                        onUpdate={handleUpdate}
-                        onChange={handleInputChange}
-                        fieldType="textarea"
-                        isLoading={false}
-                    />
+                    {company.description && (
+                        <>
+                            <div style={{ padding: '0.5rem', fontWeight: '500' }}>
+                                Description
+                            </div>
+                            <div style={{ padding: '0.5rem' }}>
+                                {company.description}
+                            </div>
+                        </>
+                    )}
                     
-                    <div style={{ padding: '0.5rem' }}>
-                        Target Market
-                    </div>
-                    <EditableField
-                        fieldName="targetMarket"
-                        value={editValues.targetMarket}
-                        isEditing={editingField === 'targetMarket'}
-                        onEdit={handleEdit}
-                        onCancel={handleCancel}
-                        onUpdate={handleUpdate}
-                        onChange={handleInputChange}
-                        isLoading={false}
-                    />
+                    {company.target_market && (
+                        <>
+                            <div style={{ padding: '0.5rem', fontWeight: '500' }}>
+                                Target Market
+                            </div>
+                            <div style={{ padding: '0.5rem' }}>
+                                {company.target_market}
+                            </div>
+                        </>
+                    )}
  
-                    <div style={{ padding: '0.5rem' }}>
-                        Website
-                    </div>
-                    <EditableField
-                        fieldName="website"
-                        value={editValues.website}
-                        isEditing={editingField === 'website'}
-                        onEdit={handleEdit}
-                        onCancel={handleCancel}
-                        onUpdate={handleUpdate}
-                        onChange={handleInputChange}
-                        isLoading={false}
-                    />
+                    {company.website_url && (
+                        <>
+                            <div style={{ padding: '0.5rem', fontWeight: '500' }}>
+                                Website
+                            </div>
+                            <div style={{ padding: '0.5rem' }}>
+                                {company.website_url}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
             <br></br>
             <br></br>
             <div className="flex items-center gap-3">
-                <p className='text-lg font-medium'>Company Files</p>
+                <h2 className="text-2xl font-semibold mb-1">Company Files</h2>
                 <div className="relative group">
-                    <svg 
-                        className="cursor-pointer" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="22" 
-                        height="22" 
-                        fill="none" 
-                        viewBox="0 0 24 24"
+                    <button
                         onClick={handleUploadClick}
+                        className="p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                     >
-                        <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21.96 13.42a5 5 0 0 0-4.31-4.34A6 6 0 0 0 6 11.02a4 4 0 1 0 0 8h6M18.78 23v-8"/>
-                        <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m15.58 18.2 3.2-3.2 3.2 3.2"/>
-                    </svg>
+                        <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width="26" 
+                            height="26" 
+                            fill="none" 
+                            viewBox="0 0 24 24"
+                        >
+                            <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21.96 13.42a5 5 0 0 0-4.31-4.34A6 6 0 0 0 6 11.02a4 4 0 1 0 0 8h6M18.78 23v-8"/>
+                            <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m15.58 18.2 3.2-3.2 3.2 3.2"/>
+                        </svg>
+                    </button>
                     <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                         Upload files
                     </div>

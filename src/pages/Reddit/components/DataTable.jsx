@@ -102,6 +102,7 @@ const DataTable = ({
                     postLink={row.postLink}
                     postData={row}
                     onCommentReplyUpdate={row.onCommentReplyUpdate}
+                    localCommentReplyStates={row.localCommentReplyStates}
                   />
                 </React.Fragment>
               );

@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { useRedditComments } from '../../../hooks/useRedditComments';
 import ReplyButton from './ReplyButton';
 
-const ExpandableContent = ({ columns, showCheckboxes, expandableData, rowIndex, isExpanded, postContent, postId, postLink, postData, onCommentReplyUpdate }) => {
+const ExpandableContent = ({ columns, showCheckboxes, expandableData, rowIndex, isExpanded, postContent, postId, postLink, postData, onCommentReplyUpdate, localCommentReplyStates }) => {
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   
   // Use React Query to fetch comments
@@ -102,13 +102,16 @@ const ExpandableContent = ({ columns, showCheckboxes, expandableData, rowIndex, 
                               text="Reply"
                               iconID="chat"
                               onClick={() => {}}
-                              isReplied={comment.replied_to}
+                              isReplied={localCommentReplyStates && localCommentReplyStates[comment.id] !== undefined ? localCommentReplyStates[comment.id] : comment.replied_to}
                               content={comment.body}
                               contentType="comment"
                               link={comment.link || `${postLink}#${comment.id}`}
                               postContent={postContent}
                               leadId={comment.id}
-                              onReplyUpdate={(newStatus) => onCommentReplyUpdate(comment.id, newStatus)}
+                              onReplyUpdate={(newStatus) => {
+                                console.log('🔄 Comment reply update:', comment.id, newStatus, 'Current states:', localCommentReplyStates);
+                                onCommentReplyUpdate(comment.id, newStatus);
+                              }}
                             />
                           </div>
                         </div>

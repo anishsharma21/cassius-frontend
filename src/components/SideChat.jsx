@@ -11,6 +11,7 @@ const SideChat = () => {
   const [showClearTooltip, setShowClearTooltip] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false); // true = streaming to blog editor, false = streaming to SideChat
   const [streamLocation, setStreamLocation] = useState('SIDE_CHAT'); // Controls content routing
+  const [streamingMessageId, setStreamingMessageId] = useState(null); // ID of the message being streamed
   
   // Use ref to track streamLocation synchronously for content routing
   const streamLocationRef = useRef('SIDE_CHAT');
@@ -28,69 +29,7 @@ const SideChat = () => {
   }, [streamLocation]);
 
 
-  // Listen for new Reddit post messages and guide prompts
-  useEffect(() => {
-    const handleGuidePrompt = async (content, redditLink = null, contentType = null) => {
-      console.log('📝 Creating user message with Reddit info:', { content, redditLink, contentType });
-      const userMessage = {
-        id: `user_${Date.now()}_${++messageIdCounter.current}`,
-        type: 'user',
-        content: content,
-        timestamp: new Date(),
-        redditLink: redditLink,
-        contentType: contentType
-      };
-      
-      console.log('👤 User message created:', userMessage);
-      
-      // Add user message to conversation
-      setConversation(prev => [...prev, userMessage]);
-      
-      // Generate AI response
-      await generateAIResponse(content, redditLink, contentType);
-    };
 
-    const handleRedditReplyPrompt = (event) => {
-      console.log('🔴 Reddit reply prompt received:', event.detail);
-      const promptData = event.detail;
-      // Clear the guide prompt from localStorage
-      localStorage.removeItem('guidePrompt');
-      // Immediately submit the guide prompt with Reddit link info
-      handleGuidePrompt(promptData.content, promptData.redditLink, promptData.contentType);
-    };
-
-    const handleStorageChange = () => {
-      // Check for guide prompts
-      const guidePrompt = localStorage.getItem('guidePrompt');
-      if (guidePrompt) {
-        console.log('📦 Guide prompt from localStorage:', guidePrompt);
-        const promptData = JSON.parse(guidePrompt);
-        // Clear the guide prompt from localStorage
-        localStorage.removeItem('guidePrompt');
-        
-        // Immediately submit the guide prompt without populating input
-        handleGuidePrompt(promptData.content, promptData.redditLink, promptData.contentType);
-      }
-    };
-
-    // Check for existing messages on mount
-    handleStorageChange();
-
-    // Listen for custom Reddit reply events (instant)
-    window.addEventListener('redditReplyPrompt', handleRedditReplyPrompt);
-    
-    // Listen for storage events
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also check periodically for new messages
-    const interval = setInterval(handleStorageChange, 1000);
-
-    return () => {
-      window.removeEventListener('redditReplyPrompt', handleRedditReplyPrompt);
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
 
   // Auto-scroll to bottom when conversation updates
   useEffect(() => {
@@ -168,7 +107,9 @@ const SideChat = () => {
     
     try {
       // Build chat history from conversation (last 6 messages)
-      const chatHistory = conversation
+      // Get current conversation state to ensure it's up-to-date after clearChat
+      const currentConversation = conversation;
+      const chatHistory = currentConversation
         .slice(-6)
         .map(msg => {
           if (msg.type === 'user') {
@@ -178,6 +119,12 @@ const SideChat = () => {
           }
         })
         .join('\n');
+
+      console.log('📚 Building chat history:', {
+        totalMessages: currentConversation.length,
+        chatHistory: chatHistory || 'No chat history',
+        timestamp: new Date().toISOString()
+      });
 
       const requestBody = {
         message: userPrompt,
@@ -425,7 +372,235 @@ const SideChat = () => {
         )
       );
     }
-  }, [queryClient, isStreaming, streamLocation]);
+  }, [queryClient, isStreaming, streamLocation, conversation]);
+
+  // Define functions using useCallback to avoid dependency issues
+  const handleGuidePrompt = useCallback(async (content, redditLink = null, contentType = null) => {
+    console.log('📝 Creating user message with Reddit info:', { content, redditLink, contentType });
+    const userMessage = {
+      id: `user_${Date.now()}_${++messageIdCounter.current}`,
+      type: 'user',
+      content: content,
+      timestamp: new Date(),
+      redditLink: redditLink,
+      contentType: contentType
+    };
+    
+    console.log('👤 User message created:', userMessage);
+    
+    // Add user message to conversation
+    setConversation(prev => [...prev, userMessage]);
+    
+    // Generate AI response
+    await generateAIResponse(content, redditLink, contentType);
+  }, [generateAIResponse]);
+
+  const handleGeneratedReply = useCallback(async (promptData) => {
+    console.log('🎯 Handling generated reply:', promptData);
+    
+    // Create user message
+    const userMessage = {
+      id: `user_${Date.now()}_${++messageIdCounter.current}`,
+      type: 'user',
+      content: promptData.content,
+      timestamp: new Date(),
+      redditLink: promptData.redditLink,
+      contentType: promptData.contentType
+    };
+    
+    // Add user message to conversation
+    setConversation(prev => [...prev, userMessage]);
+    
+    // Create AI message with the pre-generated reply and prefix
+    const aiMessage = {
+      id: `ai_${Date.now()}_${++messageIdCounter.current}`,
+      type: 'ai',
+      content: `GENERATED REDDIT REPLY:\n\n${promptData.aiGeneratedReply}`,
+      displayContent: promptData.aiGeneratedReply, // Display content without prefix
+      timestamp: new Date(),
+      isStreaming: false,
+      redditLink: promptData.redditLink,
+      contentType: promptData.contentType
+    };
+    
+    // Add AI message to conversation
+    setConversation(prev => [...prev, aiMessage]);
+    
+    console.log('✅ AI-generated reply added to conversation');
+  }, []);
+
+  const handleStreamingReply = useCallback(async (promptData) => {
+    console.log('🎯 Starting streaming reply:', promptData);
+    
+    // Create user message for Reddit reply (this will be displayed in chat history)
+    const userMessage = {
+      id: `user_${Date.now()}_${++messageIdCounter.current}`,
+      type: 'user',
+      content: promptData.content,
+      timestamp: new Date(),
+      redditLink: promptData.redditLink,
+      contentType: promptData.contentType
+    };
+    
+    // Add user message to conversation
+    setConversation(prev => [...prev, userMessage]);
+    
+    // Create AI message placeholder for streaming
+    const aiMessageId = `ai_${Date.now()}_${++messageIdCounter.current}`;
+    const aiMessage = {
+      id: aiMessageId,
+      type: 'ai',
+      content: '',
+      displayContent: '', // Initialize display content separately
+      timestamp: new Date(),
+      isStreaming: true,
+      redditLink: promptData.redditLink,
+      contentType: promptData.contentType
+    };
+    
+    // Add AI message to conversation
+    setConversation(prev => [...prev, aiMessage]);
+    
+    // Store the AI message ID for streaming updates
+    setStreamingMessageId(aiMessageId);
+    
+    console.log('✅ Streaming reply started, AI message ID:', aiMessageId);
+  }, []);
+
+  const handleStreamingChunk = useCallback((chunkContent) => {
+    console.log('📝 Handling streaming chunk:', chunkContent.substring(0, 50) + '...');
+    
+    if (streamingMessageId) {
+      setConversation(prev => 
+        prev.map(msg => 
+          msg.id === streamingMessageId
+            ? { 
+                ...msg, 
+                content: (() => {
+                  // If this is the first chunk, add the prefix
+                  if (!msg.content) {
+                    return `GENERATED REDDIT REPLY:\n\n${chunkContent}`;
+                  }
+                  // Otherwise, just append the chunk
+                  return msg.content + chunkContent;
+                })(),
+                // Store the prefix separately for display purposes
+                displayContent: (() => {
+                  // If this is the first chunk, don't show the prefix
+                  if (!msg.content) {
+                    return chunkContent;
+                  }
+                  // Otherwise, just append the chunk
+                  return (msg.displayContent || '') + chunkContent;
+                })()
+              }
+            : msg
+        )
+      );
+    }
+  }, [streamingMessageId]);
+
+  const handleStreamingComplete = useCallback(() => {
+    console.log('✅ Streaming complete');
+    
+    if (streamingMessageId) {
+      setConversation(prev => 
+        prev.map(msg => 
+          msg.id === streamingMessageId
+            ? { 
+                ...msg, 
+                isStreaming: false
+              }
+            : msg
+        )
+      );
+      
+      // Clear the streaming message ID
+      setStreamingMessageId(null);
+    }
+  }, [streamingMessageId]);
+
+  // Listen for new Reddit post messages and guide prompts
+  useEffect(() => {
+    const handleRedditReplyPrompt = async (event) => {
+      console.log('🔴 Reddit reply prompt received:', event.detail);
+      const promptData = event.detail;
+      // Clear the guide prompt from localStorage
+      localStorage.removeItem('guidePrompt');
+      
+      if (promptData.isGeneratedReply && promptData.isStreaming) {
+        // Handle streaming reply - start the streaming process
+        await handleStreamingReply(promptData);
+      } else if (promptData.isGeneratedReply && promptData.aiGeneratedReply) {
+        // Handle generated reply - display the AI-generated reply directly
+        await handleGeneratedReply(promptData);
+      } else {
+        // Handle regular guide prompt - generate AI response
+        handleGuidePrompt(promptData.content, promptData.redditLink, promptData.contentType);
+      }
+    };
+
+    const handleRedditReplyStream = (event) => {
+      console.log('🌊 Reddit reply stream received:', event.detail);
+      const streamData = event.detail;
+      
+      if (streamData.isChunk) {
+        // Handle streaming chunk - append to current AI message
+        handleStreamingChunk(streamData.content);
+      } else if (streamData.isComplete) {
+        // Handle streaming completion
+        handleStreamingComplete();
+      }
+    };
+
+    const handleStorageChange = () => {
+      // Check for guide prompts
+      const guidePrompt = localStorage.getItem('guidePrompt');
+      if (guidePrompt) {
+        console.log('📦 Guide prompt from localStorage:', guidePrompt);
+        const promptData = JSON.parse(guidePrompt);
+        // Clear the guide prompt from localStorage
+        localStorage.removeItem('guidePrompt');
+        
+        // Check if this is a generated reply or a regular guide prompt
+        if (promptData.isGeneratedReply) {
+          // Handle Reddit reply - don't call chat API
+          if (promptData.isStreaming) {
+            // Handle streaming reply - start the streaming process
+            handleStreamingReply(promptData);
+          } else if (promptData.aiGeneratedReply) {
+            // Handle generated reply - display the AI-generated reply directly
+            handleGeneratedReply(promptData);
+          }
+        } else {
+          // Handle regular guide prompt - generate AI response
+          handleGuidePrompt(promptData.content, promptData.redditLink, promptData.contentType);
+        }
+      }
+    };
+
+    // Check for existing messages on mount
+    handleStorageChange();
+
+    // Listen for custom Reddit reply events (instant)
+    window.addEventListener('redditReplyPrompt', handleRedditReplyPrompt);
+    
+    // Listen for Reddit reply streaming events
+    window.addEventListener('redditReplyStream', handleRedditReplyStream);
+    
+    // Listen for storage events
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically for new messages
+    const interval = setInterval(handleStorageChange, 1000);
+
+    return () => {
+      window.removeEventListener('redditReplyPrompt', handleRedditReplyPrompt);
+      window.removeEventListener('redditReplyStream', handleRedditReplyStream);
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [handleGuidePrompt, handleGeneratedReply, handleStreamingReply, handleStreamingChunk, handleStreamingComplete]);
 
   // Function to render text with Markdown formatting using react-markdown
   const renderFormattedText = (text) => {
@@ -451,6 +626,10 @@ const SideChat = () => {
   // Clear chat function
   const clearChat = () => {
     setConversation([]);
+    setIsStreaming(false);
+    setStreamLocation('SIDE_CHAT');
+    streamLocationRef.current = 'SIDE_CHAT';
+    console.log('🧹 Chat history cleared - conversation, streaming states, and context reset');
   };
 
   return (
@@ -458,7 +637,7 @@ const SideChat = () => {
       {/* Header */}
       <div className="flex justify-between -mt-1 items-center p-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-base font-normal text-black">Chat</h3>
+          <h3 className="text-base font-medium text-black">Chat with Cassius</h3>
         </div>
         <div className="relative">
           <button className="cursor-pointer"
@@ -508,9 +687,9 @@ const SideChat = () => {
                       </div>
                     ) : (
                       // Show regular content (including streaming content that's not placeholder text)
-                      message.content && (
+                      (message.displayContent || message.content) && (
                         <div className="markdown-content">
-                          {renderFormattedText(message.content)}
+                          {renderFormattedText(message.displayContent || message.content)}
                           
                           {/* Show "Copy and go to Reddit" button for Reddit reply messages after AI response */}
                           {message.type === 'ai' && !message.isStreaming && message.redditLink && message.contentType && (
@@ -518,6 +697,7 @@ const SideChat = () => {
                               <button
                                 onClick={async () => {
                                   try {
+                                    // Copy the full content (including prefix) for clipboard
                                     await navigator.clipboard.writeText(message.content);
                                     console.log('✅ Response copied to clipboard');
                                     // Open Reddit link after copying
@@ -554,13 +734,13 @@ const SideChat = () => {
 
       {/* Chat Prompt Box */}
       <div className="mt-auto px-3 py-3">
-        <div className="relative h-26 border bg-gray-100 border-gray-200 rounded-lg">
+        <div className="relative h-26 border bg-gray-100 border-gray-200 rounded-lg focus-within:border-black focus-within:border">
           <form onSubmit={handleSubmit} className="h-full text-base font-normal text-black pr-12 pl-3 pt-3">
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Ask Cassius"
-              className="w-full outline-none bg-transparent resize-none h-full overflow-y-auto text-base font-normal text-black placeholder-gray-500"
+              className="w-full outline-none bg-transparent resize-none h-full overflow-y-auto text-base font-normal text-black placeholder-gray-500 focus:border-gray-400"
               rows="1"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {

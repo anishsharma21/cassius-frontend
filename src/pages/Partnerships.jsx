@@ -10,8 +10,8 @@ function Partnerships() {
     return (
       <div className="p-6 bg-white min-h-screen">
         <div className="mb-12">
-          <h1 className="text-3xl font-bold mb-1">GEO Hub</h1>
-          <p className="text-gray-600">Create generative-engine-optimized content for your business</p>
+          <h1 className="text-3xl font-bold mb-1">Partnerships</h1>
+          <p className="text-gray-600">Find Instagram creators to grow your business</p>
         </div>
         <div className="mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

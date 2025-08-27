@@ -12,7 +12,7 @@ const InstagramInfluencerTile = ({ influencer }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       {/* Header with photo and name */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center space-x-4">

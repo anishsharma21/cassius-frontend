@@ -87,8 +87,8 @@ function GEO() {
       <div className="p-6">
         {/* Page Header */}
         <div className="mb-12">
-          <h1 className="text-3xl font-bold mb-1">GEO Hub</h1>
-          <p className="text-gray-600">Create generative-engine-optimized content for your business</p>
+          <h1 className="text-3xl font-bold mb-1">SEO Hub</h1>
+          <p className="text-gray-600">Create search-engine-optimised content for your business</p>
         </div>
 
         {/* Keywords Section */}

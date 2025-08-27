@@ -185,7 +185,8 @@ function Reddit() {
         />
       </div>
     ),
-    onCommentReplyUpdate: handleCommentReplyUpdate
+    onCommentReplyUpdate: handleCommentReplyUpdate,
+    localCommentReplyStates: localCommentReplyStates
   }));
 
 

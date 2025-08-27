@@ -33,5 +33,10 @@ export const useUpdateRedditRepliedTo = () => {
       // Don't update cache counts since we're handling them locally in the component
       console.log('✅ Backend updated successfully:', data);
     },
+    onError: (error) => {
+      console.error('❌ Failed to update replied_to status:', error);
+      // Note: We can't easily revert the optimistic update here since we don't have access to the component state
+      // The component should handle this by checking the mutation state if needed
+    },
   });
 };

@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Tooltip from './Tooltip';
 import { useUpdateRedditRepliedTo } from '../../../hooks/useUpdateRedditRepliedTo';
+import { useRedditReply } from '../../../hooks/useRedditReply';
 
 const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = false, content = "", contentType = "post", link = "", postContent = "", leadId = "", onReplyUpdate }) => {
   const updateRepliedTo = useUpdateRedditRepliedTo();
+  const { generateReply } = useRedditReply();
+  
+  // Check if there was an error updating the backend
+  const hasBackendError = updateRepliedTo.isError;
+  
+  // Handle backend errors and revert optimistic updates
+  useEffect(() => {
+    if (hasBackendError && onReplyUpdate) {
+      console.log('🔄 Reverting optimistic update due to backend error');
+      onReplyUpdate(isReplied);
+    }
+  }, [hasBackendError, onReplyUpdate, isReplied]);
   
   // Icon mapping based on iconID
   const getIcon = (iconID) => {
@@ -39,53 +52,59 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
       onReplyUpdate(!isReplied);
     }
     
-    // Only send message to SideChat if we're marking as replied (not unreplied)
-    if (!isReplied) {
-      // Send message to SideChat INSTANTLY (don't wait for API)
-      let messageContent;
-      if (contentType === "comment") {
-        messageContent = `Reply to this Reddit comment: "${content}"\n\nThe comment was for this post: "${postContent}"`;
-      } else {
-        messageContent = `Reply to this Reddit ${contentType}: "${content}"`;
+          // Only generate reply if we're marking as replied (not unreplied)
+      if (!isReplied) {
+        try {
+          // Generate reply using the backend API
+          // For posts: use content as business context
+          // For comments: use postContent as business context (the post the comment was made on)
+          const businessContext = contentType === "comment" ? postContent : content;
+          console.log('🚀 Calling generateReply with:', { content: content.substring(0, 100), contentType, businessContext: businessContext.substring(0, 100) });
+          
+          // Create a message to send to SideChat to start the streaming
+          const messageContent = `Reply to this Reddit ${contentType}: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`;
+          
+          const promptData = {
+            content: messageContent,
+            timestamp: new Date().toISOString(),
+            redditLink: link,
+            contentType: contentType,
+            isGeneratedReply: true, // Flag to indicate this is a generated reply
+            isStreaming: true // Flag to indicate this will be streamed
+          };
+          
+          console.log('📤 Starting streaming reply to SideChat:', promptData);
+          
+          // Dispatch custom event to start streaming (no localStorage fallback needed)
+          window.dispatchEvent(new CustomEvent('redditReplyPrompt', {
+            detail: promptData
+          }));
+          
+          // Now call the backend to generate the reply (this will stream to SideChat via events)
+          const aiGeneratedReply = await generateReply(content, contentType, link, businessContext);
+          console.log('📨 Received from generateReply:', typeof aiGeneratedReply, aiGeneratedReply ? aiGeneratedReply.substring(0, 100) : 'null');
+          
+          console.log('✅ Generated reply streaming completed');
+          
+          // Call the original onClick handler
+          if (onClick) {
+            onClick();
+          }
+        } catch (error) {
+          console.error('❌ Failed to generate reply:', error);
+          
+          // Revert the optimistic update on error
+          if (onReplyUpdate) {
+            onReplyUpdate(isReplied);
+          }
+        }
       }
-      
-      const promptData = {
-        content: messageContent,
-        timestamp: new Date().toISOString(),
-        redditLink: link,
-        contentType: contentType
-      };
-      
-      console.log('📤 Sending prompt data to SideChat INSTANTLY:', promptData);
-      
-      // Set localStorage as fallback
-      localStorage.setItem('guidePrompt', JSON.stringify(promptData));
-      
-      // Dispatch custom event for instant response
-      window.dispatchEvent(new CustomEvent('redditReplyPrompt', {
-        detail: promptData
-      }));
-      
-      console.log('✅ Custom event dispatched INSTANTLY');
-      
-      // Call the original onClick handler
-      if (onClick) {
-        onClick();
-      }
-    }
     
     // Now update the backend in the background (don't await)
     if (leadId) {
       updateRepliedTo.mutate({ 
         leadId, 
         repliedTo: !isReplied 
-      }).catch(error => {
-        console.error('❌ Failed to update replied_to status:', error);
-        
-        // Revert the optimistic update on error
-        if (onReplyUpdate) {
-          onReplyUpdate(isReplied);
-        }
       });
     }
   };
