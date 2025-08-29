@@ -637,7 +637,7 @@ const SideChat = () => {
       {/* Header */}
       <div className="flex justify-between -mt-1 items-center p-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-base font-medium text-black">Chat with Cassius</h3>
+          <h3 className="text-base font-medium text-black">Chat with Cassius Intelligence</h3>
         </div>
         <div className="relative">
           <button className="cursor-pointer"

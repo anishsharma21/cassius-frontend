@@ -62,8 +62,8 @@ const UserMenu = ({ user, isLoading, isCollapsed }) => {
             ref={popupRef}
             className="fixed w-fit bg-white border border-gray-300 rounded-lg shadow-lg p-2 z-[9999] max-h-[80vh] overflow-auto"
             style={{
-              top: iconRef.current ? iconRef.current.getBoundingClientRect().top - 100 : 0,
-              left: iconRef.current ? iconRef.current.getBoundingClientRect().right + 8 : 0
+              bottom: iconRef.current ? window.innerHeight - iconRef.current.getBoundingClientRect().top + 8 : 0,
+              left: iconRef.current ? iconRef.current.getBoundingClientRect().left : 0
             }}
           >
             <div className="mb-2 text-left text-base font-normal text-black p-1">{userEmail}</div>
