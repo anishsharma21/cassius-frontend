@@ -10,12 +10,65 @@ import ReplyButton from './components/ReplyButton';
 import ClickableLink from './components/ClickableLink';
 import API_ENDPOINTS from '../../config/api';
 
+// Leads Tab Content Component
+const LeadsTabContent = ({ columns, tableData, actions, currentPage, totalPages, onPageChange, isLoading }) => {
+  return (
+    <DataTable
+      title="Leads"
+      columns={columns}
+      data={tableData}
+      actions={actions}
+      showCheckboxes={true}
+      expandableData={[]}
+      externalPagination={true}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={onPageChange}
+      isLoading={isLoading}
+    />
+  );
+};
+
+// Posts Tab Content Component (Placeholder for now)
+const PostsTabContent = () => {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-medium text-gray-900">Create Reddit Posts</h2>
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            New Post
+          </button>
+        </div>
+      </div>
+      
+      <div className="p-8 text-center">
+        <div className="max-w-md mx-auto">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Create Your First Reddit Post</h3>
+          <p className="text-gray-500 mb-6">
+            Generate AI-powered Reddit posts tailored to your business and target subreddits.
+          </p>
+          <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Create Post
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function Reddit() {
   const [currentPage, setCurrentPage] = useState(1);
   const [localReplyStates, setLocalReplyStates] = useState({});
   const [localCommentReplyStates, setLocalCommentReplyStates] = useState({});
   const [localTotalCount, setLocalTotalCount] = useState(0);
   const [localRepliedCount, setLocalRepliedCount] = useState(0);
+  const [activeTab, setActiveTab] = useState('leads'); // New state for tab management
 
   // Fetch Reddit posts using React Query
   const { data: redditData, isLoading, error } = useRedditPosts(currentPage);
@@ -74,7 +127,7 @@ function Reddit() {
     }
   };
 
-  const handleReplyCountUpdate = (newTotalCount, newRepliedCount) => {
+  const handleReplyCountUpdate = () => {
     // Update the local counts when API call succeeds
     // This will be called by the ReplyButton after successful API update
   };
@@ -157,7 +210,7 @@ function Reddit() {
   const actions = RedditTableActions();
 
   // Create table data with reply state management and UI components
-  const tableData = (redditPosts || []).map((post, index) => ({
+  const tableData = (redditPosts || []).map((post) => ({
     id: post.id,
     post: (
       <div>
@@ -204,21 +257,56 @@ function Reddit() {
         <RedditMetrics totalPosts={localTotalCount || totalPosts} repliedPosts={localRepliedCount !== undefined ? localRepliedCount : repliedPosts} />
       </div>
 
-      <div className="mb-8"></div>
+      {/* Tab Navigation */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('leads')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'leads'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Leads
+              <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
+                {localTotalCount || totalPosts}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('posts')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'posts'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Posts
+              <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
+                0
+              </span>
+            </button>
+          </nav>
+        </div>
+      </div>
 
-      <DataTable
-        title="Leads"
-        columns={columns}
-        data={tableData}
-        actions={actions}
-        showCheckboxes={true}
-        expandableData={[]} // This line is changed as per the edit hint
-        externalPagination={true}
-        currentPage={currentPage}
-        totalPages={Math.max(1, Math.ceil(totalPosts / 10))}
-        onPageChange={handlePageChange}
-        isLoading={isLoading}
-      />
+      {/* Tab Content */}
+      {activeTab === 'leads' && (
+        <LeadsTabContent
+          columns={columns}
+          tableData={tableData}
+          actions={actions}
+          currentPage={currentPage}
+          totalPages={Math.max(1, Math.ceil(totalPosts / 10))}
+          onPageChange={handlePageChange}
+          isLoading={isLoading}
+        />
+      )}
+
+      {activeTab === 'posts' && (
+        <PostsTabContent />
+      )}
     </div>
   );
 }
