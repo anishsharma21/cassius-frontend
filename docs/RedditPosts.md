@@ -9,7 +9,7 @@ This comprehensive feature allows users to generate AI-powered Reddit posts for 
 ### How It Works for Users
 
 1. **Navigate to Posts Tab**: Go to Reddit Hub → Posts tab
-2. **Select Subreddit**: Choose from pre-configured subreddits (8 default subreddits added automatically on signup)
+2. **Select Subreddit**: Choose from business-relevant subreddits (discovered automatically based on your business context)
 3. **Add Context** (Optional): Provide additional context or specific points to emphasize
 4. **Generate Post**: Click "Generate Post" to start AI-powered creation
 5. **Watch Real-time Generation**: Content streams live in both the main interface and SideChat
@@ -42,7 +42,7 @@ The Reddit Post Generation feature is built as a full-stack implementation with:
 
 ### Business Logic
 
-- **Default Subreddits**: 8 default subreddits automatically added on user signup (startups, entrepreneur, smallbusiness, business, marketing, SaaS, webdev, programming)
+- **Dynamic Subreddit Discovery**: AI-powered subreddit discovery automatically finds the most relevant subreddits for each business based on their specific context, industry, and target market
 - **Business Context Integration**: Uses existing `get_app_context()` to pull user's business context for personalized content
 - **Post Lifecycle**: Posts start as "draft" status, can be marked "posted" by user after manual posting to Reddit, and can be reverted back to "draft" status
 - **Content Format**: AI generates both title and body content in structured format
@@ -114,10 +114,15 @@ Added Pydantic schemas for API validation:
 
 #### `backend/src/features/reddit/services.py`
 
-Added 9 new service functions:
+Added 14 new service functions:
 
 - `get_user_subreddits()`: Fetch user's configured subreddits for dropdown
-- `add_default_subreddits_for_user()`: Add 8 default subreddits on signup
+- `discover_relevant_subreddits()`: AI-powered subreddit discovery using business context
+- `generate_subreddit_discovery_queries()`: Generate search queries for subreddit discovery
+- `extract_subreddits_from_search_results()`: Extract subreddit names from search results
+- `validate_and_get_subreddit_info()`: Validate subreddits using PRAW and get metadata
+- `rank_subreddits_for_business()`: Rank subreddits by business relevance
+- `discover_and_add_subreddits_for_user()`: Main function to discover and add relevant subreddits
 - `generate_reddit_post_stream()`: AI-powered streaming post generation using GPT-4
 - `parse_generated_post()`: Parse AI response into title and content
 - `save_generated_post()`: Save generated content to database
@@ -137,9 +142,9 @@ Added 6 new FastAPI endpoints:
 - `POST /reddit/generated-posts/{id}/mark-posted`: Mark post as posted
 - `POST /reddit/generated-posts/{id}/mark-draft`: Mark post as draft (undo posted status)
 
-#### `backend/src/features/user_auth/services.py`
+#### `backend/src/features/company/services.py`
 
-Modified the `signup()` function to automatically add default subreddits for new users.
+Added `init_subreddits_for_company()` function to initialize business-relevant subreddits after company creation when business context is available.
 
 ### API Endpoints
 
@@ -236,13 +241,21 @@ Modified existing Reddit component to add Posts tab functionality:
 
 ## How It Works (Technical Flow)
 
-### 1. User Registration
+### 1. User Registration & Subreddit Discovery
 
 When a user signs up, the system automatically:
 
-- Calls `add_default_subreddits_for_user()` in the signup flow
-- Adds 8 default subreddits to their `user_subreddits` table
-- Makes them immediately available for post generation
+- Creates the user and company records
+- Launches background initialization tasks including `init_subreddits_for_company()`
+- **AI-Powered Discovery Process**:
+  1. Generates search queries based on business context using OpenAI
+  2. Searches Google for subreddit recommendations using Discovery Engine
+  3. Extracts subreddit names from search results using AI
+  4. Validates each subreddit using PRAW (checks activity, appropriateness, etc.)
+  5. Ranks subreddits by business relevance using OpenAI
+  6. Adds the top 8 most relevant subreddits to the user's account
+- **Fallback Protection**: Uses hardcoded business subreddits if discovery fails
+- Makes discovered subreddits immediately available for post generation
 
 ### 2. Post Generation Process
 
@@ -313,13 +326,13 @@ When a user signs up, the system automatically:
 
 - **Post Scheduling**: Queue posts for optimal timing
 - **A/B Testing**: Test different versions of posts for better performance
-- **Subreddit Research**: AI-powered subreddit discovery and recommendations
+- ✅ **AI-Powered Subreddit Discovery**: Dynamic discovery of relevant subreddits based on business context (IMPLEMENTED)
 - **Analytics Dashboard**: Track post performance and engagement metrics
 - **Template System**: Save and reuse successful post templates
 
 ### Automation & Intelligence
 
-- **Smart Subreddit Discovery**: Automatically suggest relevant subreddits based on business context
+- ✅ **Smart Subreddit Discovery**: Automatically discover relevant subreddits based on business context (IMPLEMENTED)
 - **Content Optimization**: Learn from successful posts to improve generation
 - **Scheduled Generation**: Automatically generate posts on a schedule
 - **Engagement Monitoring**: Real-time notifications for post performance
@@ -344,7 +357,8 @@ When a user signs up, the system automatically:
 
 - **Business Context**: Seamless integration with existing `get_app_context()` system
 - **SideChat**: Real-time streaming integration with existing chat infrastructure
-- **User Registration**: Automatic setup during user onboarding flow
+- **Company Initialization**: Automatic subreddit discovery during company setup flow
+- **AI Infrastructure**: Leverages existing OpenAI, Google Discovery Engine, and PRAW integrations
 
 ---
 
