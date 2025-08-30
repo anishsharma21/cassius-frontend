@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
   generatedPosts: `${API_BASE_URL}/reddit/generated-posts`,
   updateGeneratedPost: `${API_BASE_URL}/reddit/generated-posts`,
   markPostAsPosted: `${API_BASE_URL}/reddit/generated-posts`,
+  markPostAsDraft: `${API_BASE_URL}/reddit/generated-posts`,
 
   partnerships: {
     getInfluencers: `${API_BASE_URL}/partnerships/get-influencers`,

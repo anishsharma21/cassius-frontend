@@ -61,5 +61,30 @@ export function useUpdatePost() {
     }
   };
 
-  return { updatePost, markAsPosted, isUpdating, error };
+  const markAsDraft = async (postId) => {
+    setIsUpdating(true);
+    setError(null);
+    
+    try {
+      const url = `${API_ENDPOINTS.markPostAsDraft}/${postId}/mark-draft`;
+      const response = await fetchWithAuth(url, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to mark post as draft: ${response.status}`);
+      }
+
+      const updatedPost = await response.json();
+      return updatedPost;
+    } catch (err) {
+      console.error('Error marking post as draft:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return { updatePost, markAsPosted, markAsDraft, isUpdating, error };
 }

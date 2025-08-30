@@ -42,7 +42,7 @@ const PostsTabContent = () => {
   const { subreddits, loading: subredditsLoading } = useUserSubreddits();
   const { generatePost, isGenerating } = useGeneratePost();
   const { posts, loading: postsLoading, refetch: refetchPosts, addNewPost, updatePost } = useGeneratedPosts(1, 10);
-  const { updatePost: updatePostAPI, markAsPosted, isUpdating } = useUpdatePost();
+  const { updatePost: updatePostAPI, markAsPosted, markAsDraft, isUpdating } = useUpdatePost();
 
   const handleGenerate = async () => {
     if (!selectedSubreddit) {
@@ -101,6 +101,16 @@ const PostsTabContent = () => {
     } catch (error) {
       console.error('Error marking post as posted:', error);
       alert('Failed to mark post as posted');
+    }
+  };
+
+  const handleMarkDraft = async (postId) => {
+    try {
+      const updatedPost = await markAsDraft(postId);
+      updatePost(updatedPost);
+    } catch (error) {
+      console.error('Error marking post as draft:', error);
+      alert('Failed to mark post as draft');
     }
   };
 
@@ -237,23 +247,31 @@ const PostsTabContent = () => {
                   <div className="flex gap-2 ml-4">
                     <button
                       onClick={() => setPreviewPost(post)}
-                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:border-gray-400 transition-colors cursor-pointer"
                     >
                       Preview
                     </button>
                     <button
                       onClick={() => handleEdit(post)}
-                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800"
+                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded hover:border-blue-400 transition-colors cursor-pointer"
                     >
                       Edit
                     </button>
-                    {post.status === 'draft' && (
+                    {post.status === 'draft' ? (
                       <button
                         onClick={() => handleMarkPosted(post.id)}
                         disabled={isUpdating}
-                        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+                        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 cursor-pointer"
                       >
                         Mark Posted
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleMarkDraft(post.id)}
+                        disabled={isUpdating}
+                        className="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 cursor-pointer"
+                      >
+                        Mark as Draft
                       </button>
                     )}
                   </div>
@@ -266,8 +284,8 @@ const PostsTabContent = () => {
 
       {/* Edit Modal */}
       {editingPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{backgroundColor: 'rgba(0, 0, 0, 0.75)'}} onClick={() => setEditingPost(null)}>
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Edit Post</h3>
             </div>
@@ -315,8 +333,8 @@ const PostsTabContent = () => {
 
       {/* Preview Modal */}
       {previewPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{backgroundColor: 'rgba(0, 0, 0, 0.75)'}} onClick={() => setPreviewPost(null)}>
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">Post Preview</h3>
