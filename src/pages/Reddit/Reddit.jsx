@@ -10,6 +10,7 @@ import RedditTableActions from './components/RedditTableActions';
 import DataTable from './components/DataTable';
 import ReplyButton from './components/ReplyButton';
 import ClickableLink from './components/ClickableLink';
+import CopyGoToRedditButton from '../../components/CopyGoToRedditButton';
 
 // Leads Tab Content Component
 const LeadsTabContent = ({ columns, tableData, actions, currentPage, totalPages, onPageChange, isLoading }) => {
@@ -123,7 +124,7 @@ const PostsTabContent = () => {
             <h2 className="text-xl font-medium text-gray-900">Generate Reddit Post</h2>
             <button 
               onClick={() => setShowForm(!showForm)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
             >
               {showForm ? 'Cancel' : 'New Post'}
             </button>
@@ -224,44 +225,50 @@ const PostsTabContent = () => {
           ) : (
             posts.map((post) => (
               <div key={post.id} className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-blue-600">r/{post.subreddit_name}</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        post.status === 'posted' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {post.status}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(post.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-medium text-blue-600">r/{post.subreddit_name}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      post.status === 'posted' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {post.status}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  
+                  <div>
                     <h3 className="font-medium text-gray-900 mb-2">{post.title}</h3>
                     <p className="text-sm text-gray-600 line-clamp-3">{post.content}</p>
                   </div>
                   
-                  <div className="flex gap-2 ml-4">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setPreviewPost(post)}
-                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:border-gray-400 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:border-gray-400 transition-colors cursor-pointer"
                     >
                       Preview
                     </button>
                     <button
                       onClick={() => handleEdit(post)}
-                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded hover:border-blue-400 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded hover:border-blue-400 transition-colors cursor-pointer"
                     >
                       Edit
                     </button>
+                    <CopyGoToRedditButton 
+                      title={post.title}
+                      content={post.content}
+                      subredditName={post.subreddit_name}
+                      className="text-sm"
+                    />
                     {post.status === 'draft' ? (
                       <button
                         onClick={() => handleMarkPosted(post.id)}
                         disabled={isUpdating}
-                        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 cursor-pointer"
+                        className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 cursor-pointer"
                       >
                         Mark Posted
                       </button>
@@ -269,7 +276,7 @@ const PostsTabContent = () => {
                       <button
                         onClick={() => handleMarkDraft(post.id)}
                         disabled={isUpdating}
-                        className="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 cursor-pointer"
+                        className="px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 cursor-pointer"
                       >
                         Mark as Draft
                       </button>
@@ -315,14 +322,14 @@ const PostsTabContent = () => {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => setEditingPost(null)}
-                className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                className="px-4 py-2 text-gray-700 hover:text-gray-900 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveEdit}
                 disabled={isUpdating}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 cursor-pointer"
               >
                 {isUpdating ? 'Saving...' : 'Save Changes'}
               </button>
@@ -392,7 +399,7 @@ const PostsTabContent = () => {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => setPreviewPost(null)}
-                className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                className="px-4 py-2 text-gray-700 hover:text-gray-900 cursor-pointer"
               >
                 Close
               </button>
@@ -401,7 +408,7 @@ const PostsTabContent = () => {
                   setPreviewPost(null);
                   handleEdit(previewPost);
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
               >
                 Edit Post
               </button>
@@ -617,7 +624,7 @@ function Reddit() {
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('leads')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                 activeTab === 'leads'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -630,7 +637,7 @@ function Reddit() {
             </button>
             <button
               onClick={() => setActiveTab('posts')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                 activeTab === 'posts'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

@@ -16,13 +16,15 @@ This comprehensive feature allows users to generate AI-powered Reddit posts for 
 6. **Review Generated Content**: AI creates both title and body content formatted for Reddit
 7. **Edit if Needed**: Use the built-in editor to modify title and content
 8. **Preview Post**: View Reddit-style preview to see how it will appear
-9. **Manage Status**: Mark as "Posted" after manually posting to Reddit, or mark back as "Draft" to undo
+9. **Copy & Go to Reddit**: Click the "Copy & go to Reddit" button to copy content and open the target subreddit
+10. **Manage Status**: Mark as "Posted" after manually posting to Reddit, or mark back as "Draft" to undo
 
 ### Key User Benefits
 
 - **Authentic Content**: AI generates genuine, valuable posts that naturally promote the business
 - **Real-time Feedback**: Watch content being generated with streaming updates
 - **Full Control**: Edit, preview, and manage all generated posts
+- **Direct Reddit Access**: Copy content and navigate to Reddit directly from post cards (persistent after page refresh)
 - **Business Context**: Automatically uses stored business context for relevant content
 - **Post History**: Track all generated posts with status management
 
@@ -222,6 +224,7 @@ Modified existing Reddit component to add Posts tab functionality:
 
 - **Edit Modal**: Full-featured editor for title and content
 - **Preview Modal**: Reddit-style preview with authentic styling
+- **Copy & Go to Reddit Button**: Persistent access to copy content and navigate to Reddit
 - **Status Management**: Visual status badges and action buttons
 - **History Table**: Paginated display with post metadata
 
@@ -262,6 +265,7 @@ When a user signs up, the system automatically:
 
 - **Edit**: Users can modify title and content via modal interface
 - **Preview**: Reddit-style preview modal shows authentic Reddit appearance
+- **Copy & Go to Reddit**: Direct access button copies full post content and opens target subreddit in new tab
 - **Status Tracking**: Posts can toggle between "draft" and "posted" status with undo capability
 - **History**: Paginated post history with metadata and actions
 
@@ -285,6 +289,7 @@ When a user signs up, the system automatically:
 - ✅ Real-time streaming interface
 - ✅ Post management and editing
 - ✅ Reddit-style preview modal
+- ✅ Copy & go to Reddit button component
 - ✅ SideChat integration
 
 **Integration**:
