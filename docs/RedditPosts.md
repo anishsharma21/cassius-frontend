@@ -16,7 +16,7 @@ This comprehensive feature allows users to generate AI-powered Reddit posts for 
 6. **Review Generated Content**: AI creates both title and body content formatted for Reddit
 7. **Edit if Needed**: Use the built-in editor to modify title and content
 8. **Preview Post**: View Reddit-style preview to see how it will appear
-9. **Manage Status**: Mark as "Posted" after manually posting to Reddit
+9. **Manage Status**: Mark as "Posted" after manually posting to Reddit, or mark back as "Draft" to undo
 
 ### Key User Benefits
 
@@ -42,7 +42,7 @@ The Reddit Post Generation feature is built as a full-stack implementation with:
 
 - **Default Subreddits**: 8 default subreddits automatically added on user signup (startups, entrepreneur, smallbusiness, business, marketing, SaaS, webdev, programming)
 - **Business Context Integration**: Uses existing `get_app_context()` to pull user's business context for personalized content
-- **Post Lifecycle**: Posts start as "draft" status, can be marked "posted" by user after manual posting to Reddit
+- **Post Lifecycle**: Posts start as "draft" status, can be marked "posted" by user after manual posting to Reddit, and can be reverted back to "draft" status
 - **Content Format**: AI generates both title and body content in structured format
 - **Authenticity**: Posts designed to provide genuine value while naturally promoting the business
 
@@ -112,7 +112,7 @@ Added Pydantic schemas for API validation:
 
 #### `backend/src/features/reddit/services.py`
 
-Added 8 new service functions:
+Added 9 new service functions:
 
 - `get_user_subreddits()`: Fetch user's configured subreddits for dropdown
 - `add_default_subreddits_for_user()`: Add 8 default subreddits on signup
@@ -122,16 +122,18 @@ Added 8 new service functions:
 - `update_generated_post()`: Edit existing posts with optimistic locking
 - `get_user_generated_posts()`: Paginated post history with count
 - `mark_post_as_posted()`: Update post status to "posted"
+- `mark_post_as_draft()`: Update post status back to "draft" (undo posted status)
 
 #### `backend/src/features/reddit/routes.py`
 
-Added 5 new FastAPI endpoints:
+Added 6 new FastAPI endpoints:
 
 - `GET /reddit/user-subreddits`: Get user's subreddits for dropdown
 - `POST /reddit/generate-post`: Generate new post with streaming response
 - `GET /reddit/generated-posts`: Get paginated post history
 - `PUT /reddit/generated-posts/{id}`: Update existing post
 - `POST /reddit/generated-posts/{id}/mark-posted`: Mark post as posted
+- `POST /reddit/generated-posts/{id}/mark-draft`: Mark post as draft (undo posted status)
 
 #### `backend/src/features/user_auth/services.py`
 
@@ -146,18 +148,20 @@ Modified the `signup()` function to automatically add default subreddits for new
 | GET | `/reddit/generated-posts` | Get user's generated posts | **Paginated**, includes status and metadata |
 | PUT | `/reddit/generated-posts/{id}` | Update generated post | Edit title, content, description |
 | POST | `/reddit/generated-posts/{id}/mark-posted` | Mark post as manually posted | Status management |
+| POST | `/reddit/generated-posts/{id}/mark-draft` | Mark post as draft | **Undo posted status**, revert to draft |
 
 ### Frontend Files Created/Modified
 
 #### `frontend/src/config/api.js`
 
-Added 5 new API endpoint configurations:
+Added 6 new API endpoint configurations:
 
 - `userSubreddits`: Get user's configured subreddits
 - `generatePost`: Generate new Reddit post with streaming
 - `generatedPosts`: Get paginated post history
 - `updateGeneratedPost`: Update existing post
 - `markPostAsPosted`: Mark post as posted
+- `markPostAsDraft`: Mark post as draft (undo posted status)
 
 #### `frontend/src/hooks/useUserSubreddits.js` *(New File)*
 
@@ -190,7 +194,7 @@ Custom hook for post history management:
 Custom hook for post modifications:
 
 - Handles post editing with API integration
-- Manages "Mark as Posted" functionality
+- Manages "Mark as Posted" and "Mark as Draft" functionality
 - Includes loading states and error handling
 
 #### `frontend/src/pages/Reddit/Reddit.jsx`
@@ -258,7 +262,7 @@ When a user signs up, the system automatically:
 
 - **Edit**: Users can modify title and content via modal interface
 - **Preview**: Reddit-style preview modal shows authentic Reddit appearance
-- **Status Tracking**: Posts move from "draft" to "posted" status
+- **Status Tracking**: Posts can toggle between "draft" and "posted" status with undo capability
 - **History**: Paginated post history with metadata and actions
 
 ## Feature Completeness
@@ -270,8 +274,8 @@ When a user signs up, the system automatically:
 - ✅ Database schema and migration
 - ✅ SQLAlchemy models with relationships
 - ✅ Pydantic schemas for validation
-- ✅ 8 service functions with business logic
-- ✅ 5 REST API endpoints with streaming
+- ✅ 9 service functions with business logic
+- ✅ 6 REST API endpoints with streaming
 - ✅ User registration integration
 
 **Frontend (React)**:
