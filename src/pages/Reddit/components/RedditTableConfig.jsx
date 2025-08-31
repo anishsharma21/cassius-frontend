@@ -11,6 +11,13 @@ const RedditTableConfig = () => {
       width: "min-w-0 flex-1" // Flexible width that takes remaining space
     },
     {
+      key: "post_date",
+      header: "Posted",
+      sortable: false,
+      bold: false,
+      width: "w-24" // Fixed width for date
+    },
+    {
       key: "post_upvotes",
       header: (
         <svg className="inline w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
