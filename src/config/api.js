@@ -23,9 +23,20 @@ export const API_ENDPOINTS = {
   redditComments: `${API_BASE_URL}/reddit/comments`,
   updateRedditRepliedTo: `${API_BASE_URL}/reddit/update-replied-to`,
   generateRedditReply: `${API_BASE_URL}/reddit/generate-reply`,
+
+  // Reddit post generation endpoints
+  userSubreddits: `${API_BASE_URL}/reddit/user-subreddits`,
+  generatePost: `${API_BASE_URL}/reddit/generate-post`,
+  generatedPosts: `${API_BASE_URL}/reddit/generated-posts`,
+  updateGeneratedPost: `${API_BASE_URL}/reddit/generated-posts`,
+  markPostAsPosted: `${API_BASE_URL}/reddit/generated-posts`,
+  markPostAsDraft: `${API_BASE_URL}/reddit/generated-posts`,
+
   partnerships: {
     getInfluencers: `${API_BASE_URL}/partnerships/get-influencers`,
   },
+
+  feedback: `${API_BASE_URL}/feedback`,
 };
 
 export default API_ENDPOINTS;
