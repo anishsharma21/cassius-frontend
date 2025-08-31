@@ -10,18 +10,6 @@ export function useGeneratePost() {
     setError(null);
 
     try {
-      // Create initial message for SideChat
-      const promptData = {
-        content: `Generate a Reddit post for r/${subredditName}${userDescription ? ` with context: ${userDescription}` : ''}`,
-        isGeneratedReply: true,
-        isStreaming: true,
-        redditLink: `https://reddit.com/r/${subredditName}`,
-        contentType: 'reddit-post'
-      };
-
-      // Send to SideChat
-      window.dispatchEvent(new CustomEvent('redditReplyPrompt', { detail: promptData }));
-
       const token = localStorage.getItem('access_token');
       if (!token) {
         throw new Error('No access token found');
@@ -64,22 +52,7 @@ export function useGeneratePost() {
                   onChunk(data.content);
                 }
 
-                // Send chunk to SideChat
-                window.dispatchEvent(new CustomEvent('redditReplyStream', {
-                  detail: {
-                    isChunk: true,
-                    content: data.content
-                  }
-                }));
-
               } else if (data.type === 'complete') {
-                // Send completion to SideChat
-                window.dispatchEvent(new CustomEvent('redditReplyStream', {
-                  detail: {
-                    isComplete: true
-                  }
-                }));
-
                 // Send to local UI handler
                 if (onComplete) {
                   onComplete(data.post);
