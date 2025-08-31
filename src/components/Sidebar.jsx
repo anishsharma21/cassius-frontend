@@ -160,19 +160,14 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
                   {isLoadingCompany ? (
                     <div className="w-4 h-4 bg-blue-400 rounded animate-pulse"></div>
                   ) : isCollapsed ? (
-                    <>
-                      <span className="text-white font-medium text-base group-hover:hidden">
-                        {company?.name ? company.name.charAt(0) : 'C'}
-                      </span>
-                      <svg 
-                        className="w-4 h-4 text-white hidden group-hover:block"
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                      </svg>
-                    </>
+                    <svg 
+                      className="w-4 h-4 text-white"
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
                   ) : (
                     <span className="text-white font-medium text-base">
                       {company?.name ? company.name.charAt(0) : 'C'}
