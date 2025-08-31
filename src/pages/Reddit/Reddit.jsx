@@ -40,6 +40,24 @@ const PostsTabContent = () => {
   const [editingPost, setEditingPost] = useState(null);
   const [previewPost, setPreviewPost] = useState(null);
   
+  // ESC key handler for modals
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        if (editingPost) {
+          setEditingPost(null);
+        } else if (previewPost) {
+          setPreviewPost(null);
+        }
+      }
+    };
+
+    if (editingPost || previewPost) {
+      document.addEventListener('keydown', handleEscapeKey);
+      return () => document.removeEventListener('keydown', handleEscapeKey);
+    }
+  }, [editingPost, previewPost]);
+  
   const { subreddits, loading: subredditsLoading } = useUserSubreddits();
   const { generatePost, isGenerating } = useGeneratePost();
   const { posts, loading: postsLoading, refetch: refetchPosts, addNewPost, updatePost } = useGeneratedPosts(1, 10);
@@ -293,8 +311,17 @@ const PostsTabContent = () => {
       {editingPost && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{backgroundColor: 'rgba(0, 0, 0, 0.75)'}} onClick={() => setEditingPost(null)}>
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900">Edit Post</h3>
+              <button 
+                onClick={() => setEditingPost(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
             
             <div className="p-6 space-y-4">
@@ -344,8 +371,19 @@ const PostsTabContent = () => {
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">Post Preview</h3>
-                <span className="text-sm font-medium text-blue-600">r/{previewPost.subreddit_name}</span>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-medium text-gray-900">Post Preview</h3>
+                  <span className="text-sm font-medium text-blue-600">r/{previewPost.subreddit_name}</span>
+                </div>
+                <button 
+                  onClick={() => setPreviewPost(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             </div>
             
