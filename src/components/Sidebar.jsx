@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import UserMenu from './UserMenu';
 import API_ENDPOINTS from '../config/api';
-import flagIcon from '../assets/flag.svg';
+import brainIcon from '../assets/brain.svg'
 
 const sidebarItems = [
   { 
@@ -10,7 +10,7 @@ const sidebarItems = [
     path: 'strategy',
     icon: (
       <div className="flex items-center justify-center">
-        <img src={flagIcon} alt="Flag" className="w-5 h-5" />
+        <img src={brainIcon} alt="Flag" className="w-5 h-5" />
       </div>
     )
   },
