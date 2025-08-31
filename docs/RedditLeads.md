@@ -22,6 +22,7 @@ The Reddit Leads feature automatically discovers and surfaces potential customer
 
 - **Automated Discovery**: No manual searching - leads are found automatically
 - **Pre-filtered Quality**: AI filters ensure only relevant leads are shown
+- **Recent-First Ordering**: Most recent Reddit posts appear first for timely engagement
 - **Context-Aware Replies**: Generated responses use your business context
 - **Engagement Tracking**: Monitor which leads have been replied to
 - **Time Efficiency**: Streamlined workflow from discovery to engagement
@@ -152,8 +153,8 @@ async def _save_reddit_objects(company_id: str, new_objects: List[Dict])
 
 | Method | Endpoint | Description | Response |
 |--------|----------|-------------|----------|
-| GET | `/reddit/next-10-posts` | Get paginated Reddit leads | Posts array, counts |
-| GET | `/reddit/comments` | Get comments for a post | Comments array |
+| GET | `/reddit/next-10-posts` | Get paginated Reddit leads (sorted by recency) | Posts array, counts |
+| GET | `/reddit/comments` | Get comments for a post (sorted by recency) | Comments array |
 | PUT | `/reddit/update-replied-to` | Update lead reply status | Success status |
 | POST | `/reddit/generate-reply` | Generate AI reply | Streaming response |
 
@@ -177,12 +178,15 @@ export const useRedditPosts = (pageNumber = 1) => {
 #### Main UI Component (`frontend/src/pages/Reddit/Reddit.jsx`)
 
 **LeadsTabContent Component**:
-- Displays paginated data table
+- Displays paginated data table with recent posts first
+- Shows post creation dates with relative time formatting
 - Expandable rows for comments
 - Reply button integration
 - Real-time metric updates
 
 **Key Features**:
+- **Recent-First Display**: Posts sorted by creation time (newest first)
+- **Date Column**: Shows "2h ago", "1d ago", or absolute dates for older posts
 - **Optimistic Updates**: Local state updates before backend confirmation
 - **Pagination**: Server-side pagination with 10 items per page
 - **Expandable Content**: Click to view full post content and comments
@@ -220,9 +224,9 @@ export const useRedditPosts = (pageNumber = 1) => {
 - Engagement potential
 
 **Ranking Factors**:
-- Reddit score (upvotes)
+- **Post recency** (primary sort - most recent first)
+- Reddit score (upvotes) 
 - Comment count
-- Post recency
 - Content relevance
 
 ### Reply Generation
@@ -359,6 +363,32 @@ async def init_company_resources(company_id, ...):
 - **Auto-reply Suggestions**: Proactive reply recommendations
 - **Workflow Automation**: Trigger actions based on lead characteristics
 - **Integration Webhooks**: Connect with CRM and marketing tools
+
+## Recent Updates (Latest)
+
+### Chronological Sorting Implementation
+
+**Backend Changes** (`backend/src/features/reddit/services.py`):
+- Modified `get_next_10_posts()` to sort by `created_at DESC` instead of `score DESC`
+- Updated `get_post_comments()` to use consistent chronological sorting
+- Comments now also display in recent-first order
+
+**Frontend Enhancements** (`frontend/src/pages/Reddit/`):
+- Added "Posted" column to Reddit leads table
+- Implemented smart date formatting:
+  - "just now", "2m ago", "1h ago" for recent posts
+  - "2d ago", "3d ago" for posts within a week
+  - "Nov 15", "Dec 3" format for older posts
+- Enhanced `RedditTableConfig.jsx` with new date column
+- Added `formatPostDate()` helper function for relative time display
+
+**User Experience Improvements**:
+- **Freshest Leads First**: Users see the most recent discussions for timely engagement
+- **Visual Date Context**: Clear indication of when posts were created
+- **Better Engagement Timing**: Focus on recent conversations with higher engagement potential
+- **Consistent Sorting**: Both posts and comments follow the same chronological order
+
+This update ensures users engage with the freshest leads first, improving response timing and engagement success rates.
 
 ## Technical Notes
 
