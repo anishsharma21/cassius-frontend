@@ -638,10 +638,14 @@ function Reddit() {
   const tableData = (redditPosts || []).map((post) => ({
     id: post.id,
     post: (
-      <div>
-        <ClickableLink href={post.link}>
-          {post.body.split('\n')[0]}
-        </ClickableLink>
+      <div className="space-y-1">
+        <div className="font-medium text-gray-900 text-sm leading-5 max-w-md">
+          <div className="break-words overflow-hidden" title={post.body.split('\n')[0]}>
+            <ClickableLink href={post.link}>
+              {post.body.split('\n')[0]}
+            </ClickableLink>
+          </div>
+        </div>
       </div>
     ),
     fullPostContent: post.body.split('\n').slice(1).join('\n'),
