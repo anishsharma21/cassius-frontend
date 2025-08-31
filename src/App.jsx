@@ -3,6 +3,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
 import './index.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ChatProvider } from './contexts/ChatContext';
 
 import PrivateRoute from './components/route_guards/PrivateRoute';
 import PublicRoute from './components/route_guards/PublicRoute';
@@ -66,25 +67,27 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <Routes>
-          
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
-          
-          <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-            <Route index element={<Navigate to="strategy" replace />} />
-            <Route path="geo" element={<GEO />} />
-            <Route path="geo/:blogPostSlug" element={<BlogPostEditorPage />} />
-            <Route path="partnerships" element={<Partnerships />} />
-            <Route path="reddit" element={<Reddit />} />
-            <Route path="strategy" element={<Strategy />} />
-            <Route path="guide" element={<Guide />} />
-            <Route path="company-profile" element={<CompanyProfile />} />
-            <Route path="feedback" element={<Feedback />} />
-          </Route>
-          
-        </Routes>
+        <ChatProvider>
+          <Routes>
+            
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+            
+            <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+              <Route index element={<Navigate to="strategy" replace />} />
+              <Route path="geo" element={<GEO />} />
+              <Route path="geo/:blogPostSlug" element={<BlogPostEditorPage />} />
+              <Route path="partnerships" element={<Partnerships />} />
+              <Route path="reddit" element={<Reddit />} />
+              <Route path="strategy" element={<Strategy />} />
+              <Route path="guide" element={<Guide />} />
+              <Route path="company-profile" element={<CompanyProfile />} />
+              <Route path="feedback" element={<Feedback />} />
+            </Route>
+            
+          </Routes>
+        </ChatProvider>
       </Router>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

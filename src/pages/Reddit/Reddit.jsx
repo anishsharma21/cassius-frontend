@@ -470,10 +470,7 @@ const formatPostDate = (dateString) => {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
   
-  if (diffDays > 7) {
-    // Show date for posts older than a week
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  } else if (diffDays > 0) {
+  if (diffDays > 0) {
     return `${diffDays}d ago`;
   } else if (diffHours > 0) {
     return `${diffHours}h ago`;

@@ -29,7 +29,6 @@ const comingSoonLinks = [
 
 function Strategy() {
   const [showConversation, setShowConversation] = useState(false);
-  const [streamingMessageId, setStreamingMessageId] = useState(null);
   const [thumbsUpFeatures, setThumbsUpFeatures] = useState(new Set());
   const [showComingSoon, setShowComingSoon] = useState(false);
   
@@ -39,37 +38,13 @@ function Strategy() {
     conversation,
     createUserMessage,
     createAIMessage,
-    updateAIMessage,
-    clearConversation,
-    getChatHistory
+    clearConversation
   } = useChatConversation();
-
-  // API hook with updated callback
-  const updateAIMessageCallback = useCallback((messageId, updates) => {
-    if (typeof updates === 'function') {
-      // Handle function-based updates
-      updateAIMessage(messageId, (_prevMsg) => {
-        const currentMsg = conversation.find(msg => msg.id === messageId) || {};
-        return updates(currentMsg);
-      });
-    } else {
-      // Handle direct updates
-      updateAIMessage(messageId, updates);
-    }
-  }, [updateAIMessage, conversation]);
 
   const {
     generateAIResponse,
-    handleGeneratedReply,
-    handleStreamingChunk,
-    handleStreamingComplete,
     resetStreamingState
-  } = useChatAPI({
-    onUpdateAIMessage: updateAIMessageCallback,
-    getChatHistory,
-    streamingMessageId,
-    setStreamingMessageId
-  });
+  } = useChatAPI();
 
   // Handle thumbs up for coming soon features
   const handleThumbsUp = useCallback((featureName) => {
@@ -120,78 +95,12 @@ function Strategy() {
     setShowConversation(false);
   }, [clearConversation, resetStreamingState]);
 
-  // Listen for Reddit reply events (similar to SideChat)
+  // Monitor conversation changes to show conversation when Reddit events add messages
   useEffect(() => {
-    const handleRedditReplyPrompt = async (event) => {
-      const promptData = event.detail;
-      localStorage.removeItem('guidePrompt');
-      
-      if (promptData.isGeneratedReply && promptData.isStreaming) {
-        const aiMessageId = createAIMessage(promptData.redditLink, promptData.contentType);
-        createUserMessage(promptData.content, promptData.redditLink, promptData.contentType);
-        setStreamingMessageId(aiMessageId);
-        setShowConversation(true);
-      } else if (promptData.isGeneratedReply && promptData.aiGeneratedReply) {
-        const aiMessageId = createAIMessage(promptData.redditLink, promptData.contentType);
-        createUserMessage(promptData.content, promptData.redditLink, promptData.contentType);
-        handleGeneratedReply(promptData, aiMessageId);
-        setShowConversation(true);
-      } else {
-        createUserMessage(promptData.content, promptData.redditLink, promptData.contentType);
-        const aiMessageId = createAIMessage(promptData.redditLink, promptData.contentType);
-        await generateAIResponse(promptData.content, aiMessageId, promptData.redditLink, promptData.contentType);
-        setShowConversation(true);
-      }
-    };
-
-    const handleRedditReplyStream = (event) => {
-      const streamData = event.detail;
-      if (streamData.isChunk) {
-        handleStreamingChunk(streamData.content);
-      } else if (streamData.isComplete) {
-        handleStreamingComplete();
-      }
-    };
-
-    const handleStorageChange = () => {
-      const guidePrompt = localStorage.getItem('guidePrompt');
-      if (guidePrompt) {
-        const promptData = JSON.parse(guidePrompt);
-        localStorage.removeItem('guidePrompt');
-        
-        if (promptData.isGeneratedReply) {
-          if (promptData.isStreaming) {
-            const aiMessageId = createAIMessage(promptData.redditLink, promptData.contentType);
-            createUserMessage(promptData.content, promptData.redditLink, promptData.contentType);
-            setStreamingMessageId(aiMessageId);
-          } else if (promptData.aiGeneratedReply) {
-            const aiMessageId = createAIMessage(promptData.redditLink, promptData.contentType);
-            createUserMessage(promptData.content, promptData.redditLink, promptData.contentType);
-            handleGeneratedReply(promptData, aiMessageId);
-          }
-        } else {
-          createUserMessage(promptData.content, promptData.redditLink, promptData.contentType);
-          const aiMessageId = createAIMessage(promptData.redditLink, promptData.contentType);
-          generateAIResponse(promptData.content, aiMessageId, promptData.redditLink, promptData.contentType);
-        }
-        setShowConversation(true);
-      }
-    };
-
-    handleStorageChange();
-    window.addEventListener('redditReplyPrompt', handleRedditReplyPrompt);
-    window.addEventListener('redditReplyStream', handleRedditReplyStream);
-    window.addEventListener('storage', handleStorageChange);
-    
-    const interval = setInterval(handleStorageChange, 1000);
-
-    return () => {
-      window.removeEventListener('redditReplyPrompt', handleRedditReplyPrompt);
-      window.removeEventListener('redditReplyStream', handleRedditReplyStream);
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [createUserMessage, createAIMessage, generateAIResponse, handleGeneratedReply, handleStreamingChunk, handleStreamingComplete]);
+    if (conversation.length > 0 && !showConversation) {
+      setShowConversation(true);
+    }
+  }, [conversation.length, showConversation]);
 
   return (
     <div className="h-full flex flex-col">
