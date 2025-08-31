@@ -420,6 +420,32 @@ const PostsTabContent = () => {
   );
 };
 
+// Helper function to format dates
+const formatPostDate = (dateString) => {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffDays > 7) {
+    // Show date for posts older than a week
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } else if (diffDays > 0) {
+    return `${diffDays}d ago`;
+  } else if (diffHours > 0) {
+    return `${diffHours}h ago`;
+  } else if (diffMins > 0) {
+    return `${diffMins}m ago`;
+  } else {
+    return 'just now';
+  }
+};
+
 function Reddit() {
   const [currentPage, setCurrentPage] = useState(1);
   const [localReplyStates, setLocalReplyStates] = useState({});
@@ -582,6 +608,11 @@ function Reddit() {
     ),
     fullPostContent: post.body.split('\n').slice(1).join('\n'),
     postLink: post.link,
+    post_date: (
+      <span className="text-sm text-gray-500">
+        {formatPostDate(post.created_at)}
+      </span>
+    ),
     post_upvotes: post.score,
     post_comments: post.num_comments,
     post_actions: (
