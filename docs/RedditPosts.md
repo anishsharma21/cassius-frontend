@@ -12,7 +12,7 @@ This comprehensive feature allows users to generate AI-powered Reddit posts for 
 2. **Select Subreddit**: Choose from business-relevant subreddits (discovered automatically based on your business context)
 3. **Add Context** (Optional): Provide additional context or specific points to emphasize
 4. **Generate Post**: Click "Generate Post" to start AI-powered creation
-5. **Watch Real-time Generation**: Content streams live in both the main interface and SideChat
+5. **Watch Real-time Generation**: Content streams live in the main interface
 6. **Review Generated Content**: AI creates both title and body content formatted for Reddit
 7. **Edit if Needed**: Use the built-in editor to modify title and content
 8. **Preview Post**: View Reddit-style preview to see how it will appear
@@ -38,7 +38,7 @@ The Reddit Post Generation feature is built as a full-stack implementation with:
 - **Frontend**: React with custom hooks and real-time streaming
 - **Database**: PostgreSQL with two new tables
 - **AI Integration**: OpenAI GPT-4 with streaming responses
-- **Real-time Updates**: Server-sent events and custom events for SideChat
+- **Real-time Updates**: Server-sent events for streaming content display
 
 ### Business Logic
 
@@ -183,7 +183,6 @@ Custom hook for subreddit management:
 Custom hook for post generation with streaming:
 
 - Manages streaming post generation with server-sent events
-- Integrates with SideChat via custom events
 - Handles chunk processing and completion callbacks
 - Includes comprehensive error handling
 
@@ -223,7 +222,6 @@ Modified existing Reddit component to add Posts tab functionality:
 
 - Live content display during AI generation
 - Progress indicators and loading states
-- Integration with SideChat for dual-display streaming
 
 #### Post Management Interface
 
@@ -233,11 +231,6 @@ Modified existing Reddit component to add Posts tab functionality:
 - **Status Management**: Visual status badges and action buttons
 - **History Table**: Paginated display with post metadata
 
-#### SideChat Integration
-
-- Custom events for streaming integration (`redditReplyPrompt`, `redditReplyStream`)
-- Real-time content streaming to chat interface
-- Completion and error handling through custom events
 
 ## How It Works (Technical Flow)
 
@@ -263,7 +256,7 @@ When a user signs up, the system automatically:
 2. **API Call**: Frontend calls `POST /reddit/generate-post` with streaming
 3. **Business Context**: Backend retrieves user's business context via `get_app_context()`
 4. **AI Generation**: OpenAI GPT-4 generates content with structured prompt
-5. **Streaming Response**: Content streams via server-sent events to both main UI and SideChat
+5. **Streaming Response**: Content streams via server-sent events to the main UI
 6. **Parsing**: Backend parses response into title and content using `parse_generated_post()`
 7. **Database Storage**: Post automatically saved to `reddit_generated_posts` table
 8. **UI Updates**: Frontend updates post history and shows generated content
@@ -271,8 +264,7 @@ When a user signs up, the system automatically:
 ### 3. Real-time Integration
 
 - **Main UI**: Direct streaming display with progress indicators
-- **SideChat**: Custom events (`redditReplyPrompt`, `redditReplyStream`) for parallel streaming
-- **State Sync**: Both interfaces stay synchronized during generation
+- **State Management**: Real-time updates to post history and UI components
 
 ### 4. Post Management
 
@@ -303,13 +295,11 @@ When a user signs up, the system automatically:
 - ✅ Post management and editing
 - ✅ Reddit-style preview modal
 - ✅ Copy & go to Reddit button component
-- ✅ SideChat integration
 
 **Integration**:
 
 - ✅ Business context integration
 - ✅ Real-time streaming via server-sent events
-- ✅ Custom events for SideChat communication
 - ✅ Comprehensive error handling
 - ✅ Loading states and user feedback
 
@@ -356,7 +346,6 @@ When a user signs up, the system automatically:
 ### Integration Points
 
 - **Business Context**: Seamless integration with existing `get_app_context()` system
-- **SideChat**: Real-time streaming integration with existing chat infrastructure
 - **Company Initialization**: Automatic subreddit discovery during company setup flow
 - **AI Infrastructure**: Leverages existing OpenAI, Google Discovery Engine, and PRAW integrations
 
