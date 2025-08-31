@@ -36,7 +36,7 @@ export const API_ENDPOINTS = {
     getInfluencers: `${API_BASE_URL}/partnerships/get-influencers`,
   },
 
-  feedback: `${API_BASE_URL}/feedback`,
+  feedback: `${API_BASE_URL}/feedback/`,
 };
 
 export default API_ENDPOINTS;
