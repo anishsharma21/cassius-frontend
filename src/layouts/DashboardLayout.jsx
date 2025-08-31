@@ -12,6 +12,9 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // Check if we're on the Strategy page to hide side chat
+  const isStrategyPage = location.pathname === '/dashboard/strategy';
+  
   // Check if user is new and redirect to guide
   useEffect(() => {
     const isNewUser = localStorage.getItem('isNewUser');
@@ -21,6 +24,13 @@ const DashboardLayout = () => {
       navigate('/dashboard/guide', { replace: true });
     }
   }, [navigate, location.pathname]);
+
+  // Automatically collapse sidebar when on Strategy page
+  useEffect(() => {
+    if (isStrategyPage) {
+      setIsSidebarCollapsed(true);
+    }
+  }, [isStrategyPage]);
 
   const handleMouseDown = (e) => {
     setIsDragging(true);
@@ -69,28 +79,32 @@ const DashboardLayout = () => {
           {/* Main Page - Floating white section */}
           <div 
             className="-ml-2 px-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col"
-            style={{ width: `${100 - chatWidth}%` }}
+            style={{ width: isStrategyPage ? '100%' : `${100 - chatWidth}%` }}
           >
             <div className="flex-1 overflow-y-auto">
               <Outlet />
             </div>
           </div>
           
-          {/* Draggable Divider */}
-          <div
-            className="w-2 bg-gray-100 cursor-col-resize transition-colors relative"
-            onMouseDown={handleMouseDown}
-          >
-            <div className="absolute inset-y-0 -left-1 -right-1" />
-          </div>
+          {/* Draggable Divider - Only show if not Strategy page */}
+          {!isStrategyPage && (
+            <div
+              className="w-2 bg-gray-100 cursor-col-resize transition-colors relative"
+              onMouseDown={handleMouseDown}
+            >
+              <div className="absolute inset-y-0 -left-1 -right-1" />
+            </div>
+          )}
           
-          {/* Chat Page - Floating white section */}
-          <div 
-            className="bg-white rounded-xl shadow-sm overflow-hidden"
-            style={{ width: `${chatWidth}%` }}
-          >
-            <SideChat />
-          </div>
+          {/* Chat Page - Floating white section - Only show if not Strategy page */}
+          {!isStrategyPage && (
+            <div 
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
+              style={{ width: `${chatWidth}%` }}
+            >
+              <SideChat />
+            </div>
+          )}
         </div>
       </div>
     </div>

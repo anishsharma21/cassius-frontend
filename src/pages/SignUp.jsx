@@ -8,7 +8,7 @@ function SignUp() {
     // User details
     email: '',
     password: '',
-    website_url: '',
+    website_url: 'https://',
     // Company details
     company_name: '',
     company_description: '',
