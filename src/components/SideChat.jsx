@@ -147,10 +147,10 @@ const SideChat = () => {
             ) : (
               // AI message bubble
               <div className="flex justify-start">
-                <div className="rounded-lg bg-white w-full">
+                <div className={`rounded-lg w-full ${message.isStreaming && (!message.content || message.content === 'Thinking' || message.content === 'Generating blog content') ? 'p-0' : 'bg-white p-2'}`}>
                   <div className="text-base font-normal text-black leading-relaxed font-sans">
                     {message.isStreaming && (!message.content || message.content === 'Thinking' || message.content === 'Generating blog content') ? (
-                      // Show streaming message with shining effect (only for placeholder messages)
+                      // Show streaming message with shining effect (no background)
                       <div className="relative overflow-hidden">
                         <span className="text-gray-600 font-medium">
                           {message.content || 'Thinking'}

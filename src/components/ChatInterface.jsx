@@ -108,10 +108,10 @@ const ChatInterface = ({
               ) : (
                 // AI message bubble
                 <div className="flex justify-start">
-                  <div className="rounded-lg bg-white w-full p-4">
+                  <div className={`rounded-lg w-full ${message.isStreaming && (!message.content || message.content === 'Thinking' || message.content === 'Generating blog content') ? 'p-0' : 'bg-white p-4'}`}>
                     <div className="text-base font-normal text-black leading-relaxed font-sans">
                       {message.isStreaming && (!message.content || message.content === 'Thinking' || message.content === 'Generating blog content') ? (
-                        // Show streaming message with shining effect
+                        // Show streaming message with shining effect (no background)
                         <div className="relative overflow-hidden">
                           <span className="text-gray-600 font-medium">
                             {message.content || 'Thinking'}
@@ -119,7 +119,7 @@ const ChatInterface = ({
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shine"></div>
                         </div>
                       ) : (
-                        // Show regular content
+                        // Show regular content (with background)
                         (message.displayContent || message.content) && (
                           <div className="markdown-content">
                             {renderFormattedText(message.displayContent || message.content)}
