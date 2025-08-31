@@ -10,11 +10,23 @@ const ChatInterface = ({
   headerTitle = "Chat with Cassius Intelligence",
   onClear = null,
   height = "auto",
-  fixedBottomInput = false
+  fixedBottomInput = false,
+  inputHeight = "h-16" // New prop for customizing input height
 }) => {
   const [prompt, setPrompt] = useState('');
   const [showClearTooltip, setShowClearTooltip] = useState(false);
   const conversationRef = useRef(null);
+
+  // Calculate bottom offset for conversation area based on input height
+  const getBottomOffset = () => {
+    const heightMap = {
+      'h-16': '88px', // 64px + 24px (py-3)
+      'h-20': '104px', // 80px + 24px (py-3)
+      'h-24': '120px', // 96px + 24px (py-3)
+      'h-28': '136px', // 112px + 24px (py-3)
+    };
+    return heightMap[inputHeight] || '88px'; // default to h-16 equivalent
+  };
 
   // Auto-scroll to bottom when conversation updates
   useEffect(() => {
@@ -91,7 +103,7 @@ const ChatInterface = ({
         }`}
         style={{ 
           height: height !== "auto" && !fixedBottomInput ? height : undefined,
-          bottom: fixedBottomInput ? '88px' : undefined // h-16 (64px) + py-3 (24px) = 88px
+          bottom: fixedBottomInput ? getBottomOffset() : undefined
         }}
         ref={conversationRef}
       >
@@ -161,7 +173,7 @@ const ChatInterface = ({
 
       {/* Chat Input Box */}
       <div className={`${fixedBottomInput ? 'absolute bottom-0 left-0 right-0 bg-gray-50 z-20' : 'flex-shrink-0'} px-3 py-3`}>
-        <div className="relative h-16 border bg-gray-100 border-gray-200 rounded-lg focus-within:border-black focus-within:border">
+        <div className={`relative ${inputHeight} border bg-gray-100 border-gray-200 rounded-lg focus-within:border-black focus-within:border`}>
           <form onSubmit={handleSubmit} className="h-full text-base font-normal text-black pr-12 pl-3 pt-3">
             <textarea
               value={prompt}

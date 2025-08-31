@@ -28,12 +28,6 @@ const comingSoonLinks = [
 ];
 
 function Strategy() {
-  const [showConversation, setShowConversation] = useState(false);
-  const [thumbsUpFeatures, setThumbsUpFeatures] = useState(new Set());
-  const [showComingSoon, setShowComingSoon] = useState(false);
-  
-  const posthog = usePostHog();
-  
   const {
     conversation,
     createUserMessage,
@@ -45,6 +39,14 @@ function Strategy() {
     generateAIResponse,
     resetStreamingState
   } = useChatAPI();
+
+  // Initialize showConversation based on existing conversation
+  const [showConversation, setShowConversation] = useState(conversation.length > 0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [thumbsUpFeatures, setThumbsUpFeatures] = useState(new Set());
+  const [showComingSoon, setShowComingSoon] = useState(false);
+  
+  const posthog = usePostHog();
 
   // Handle thumbs up for coming soon features
   const handleThumbsUp = useCallback((featureName) => {
@@ -79,9 +81,14 @@ function Strategy() {
     // Create AI message placeholder
     const aiMessageId = createAIMessage();
     
-    // Show conversation if it's the first message
+    // Show conversation with transition animation if it's the first message
     if (conversation.length === 0) {
-      setShowConversation(true);
+      setIsTransitioning(true);
+      // Quick transition to feel responsive
+      setTimeout(() => {
+        setShowConversation(true);
+        setIsTransitioning(false);
+      }, 200);
     }
     
     // Generate AI response
@@ -90,25 +97,32 @@ function Strategy() {
 
   // Handle clearing conversation
   const handleClearConversation = useCallback(() => {
+    setIsTransitioning(true);
     clearConversation();
     resetStreamingState();
-    setShowConversation(false);
+    // Quick transition back to landing view
+    setTimeout(() => {
+      setShowConversation(false);
+      setIsTransitioning(false);
+    }, 200);
   }, [clearConversation, resetStreamingState]);
 
-  // Monitor conversation changes to show conversation when Reddit events add messages
+  // Handle external conversation updates (e.g., from Reddit hub)
   useEffect(() => {
     if (conversation.length > 0 && !showConversation) {
+      // If conversation gets populated externally while showing landing view, switch immediately
       setShowConversation(true);
     }
   }, [conversation.length, showConversation]);
 
   return (
-    <div className="h-full flex flex-col">
-      {!showConversation ? (
-        // Landing page view
-        <div className="flex-1 flex flex-col">
-          {/* Spacer to push chat section down */}
-          <div className="flex-grow"></div>
+    <div className="h-full flex flex-col relative overflow-hidden">
+      {/* Landing page view */}
+      <div className={`absolute inset-0 flex flex-col strategy-transition ${
+        showConversation ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
+      } ${isTransitioning ? 'pointer-events-none' : ''}`}>
+        {/* Spacer to push chat section down */}
+        <div className="flex-grow"></div>
           
           {/* Centered Chat Section */}
           <div className="flex flex-col items-center justify-center px-8 py-8">
@@ -244,50 +258,58 @@ function Strategy() {
             </div>
           </div>
         </div>
-      ) : (
-        // Full conversation view
-        <div className="flex-1 flex flex-col">
-          {/* Header with back button */}
-          <div className="p-4 border-b border-gray-200 bg-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShowConversation(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <div className="flex items-center gap-3">
-                  <img src={cassiusLogo} alt="Cassius" className="w-8 h-8" />
-                  <h2 className="text-lg font-semibold text-black">Cassius Intelligence</h2>
-                </div>
-              </div>
+      
+      {/* Full conversation view */}
+      <div className={`absolute inset-0 flex flex-col strategy-transition ${
+        showConversation ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+      } ${isTransitioning ? 'pointer-events-none' : ''}`}>
+        {/* Header with back button */}
+        <div className="p-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <button
-                onClick={handleClearConversation}
+                onClick={() => {
+                  setIsTransitioning(true);
+                  setTimeout(() => {
+                    setShowConversation(false);
+                    setIsTransitioning(false);
+                  }, 200);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Clear conversation"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
-                  <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
+              <div className="flex items-center gap-3">
+                <img src={cassiusLogo} alt="Cassius" className="w-8 h-8" />
+                <h2 className="text-lg font-semibold text-black">Cassius Intelligence</h2>
+              </div>
             </div>
-          </div>
-
-          {/* Chat Interface */}
-          <div className="flex-1 bg-gray-50 overflow-hidden">
-            <ChatInterface
-              conversation={conversation}
-              onSubmit={handleChatSubmit}
-              placeholder="Ask Cassius anything..."
-              className="h-full"
-              fixedBottomInput={true}
-            />
+            <button
+              onClick={handleClearConversation}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Clear conversation"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
+                <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/>
+              </svg>
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Chat Interface */}
+        <div className="flex-1 bg-gray-50 overflow-hidden">
+          <ChatInterface
+            conversation={conversation}
+            onSubmit={handleChatSubmit}
+            placeholder="Ask Cassius anything..."
+            className="h-full"
+            fixedBottomInput={true}
+            inputHeight="h-20"
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -12,3 +12,8 @@
 .animate-shine {
   animation: shine 1.5s ease-in-out infinite;
 }
+
+/* Custom transition for Strategy page view switching */
+.strategy-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
