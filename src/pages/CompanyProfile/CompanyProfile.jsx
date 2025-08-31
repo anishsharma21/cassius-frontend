@@ -10,6 +10,21 @@ const CompanyProfile = () => {
     
     const queryClient = useQueryClient();
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        coreBusiness: '',
+        valueProposition: '',
+        productsServices: '',
+        keyDifferentiators: '',
+        companyStage: '',
+        industry: '',
+        businessGoals: '',
+        painPointsSolved: '',
+        targetMarket: '',
+        websiteUrl: ''
+    });
     
     // Use React Query to get company data - it will use cache if available, fetch if not
     const { data: company, isLoading, error } = useQuery({
@@ -38,7 +53,7 @@ const CompanyProfile = () => {
     });
 
     // Use React Query to get company files from S3
-    const { data: companyFiles, isLoading: filesLoading, error: filesError, isFetching: filesFetching } = useQuery({
+    const { data: companyFiles, isLoading: filesLoading, error: filesError } = useQuery({
       queryKey: ['companyFiles'],
       queryFn: async () => {
         const token = localStorage.getItem('access_token');
@@ -69,6 +84,61 @@ const CompanyProfile = () => {
     // Track which files are currently being deleted
     const [deletingFiles, setDeletingFiles] = useState(new Set());
     
+    // Parse structured description into individual fields
+    const parseStructuredDescription = (description) => {
+        if (!description) return {};
+        
+        const parsed = {};
+        const lines = description.split('\n');
+        
+        lines.forEach(line => {
+            if (line.startsWith('Core Business:')) {
+                parsed.coreBusiness = line.replace('Core Business:', '').trim();
+            } else if (line.startsWith('Value Proposition:')) {
+                parsed.valueProposition = line.replace('Value Proposition:', '').trim();
+            } else if (line.startsWith('Products/Services:')) {
+                parsed.productsServices = line.replace('Products/Services:', '').trim();
+            } else if (line.startsWith('Key Differentiators:')) {
+                parsed.keyDifferentiators = line.replace('Key Differentiators:', '').trim();
+            } else if (line.startsWith('Company Stage:')) {
+                parsed.companyStage = line.replace('Company Stage:', '').trim();
+            } else if (line.startsWith('Industry:')) {
+                parsed.industry = line.replace('Industry:', '').trim();
+            } else if (line.startsWith('Business Goals:')) {
+                parsed.businessGoals = line.replace('Business Goals:', '').trim();
+            } else if (line.startsWith('Pain Points Solved:')) {
+                parsed.painPointsSolved = line.replace('Pain Points Solved:', '').trim();
+            }
+        });
+        
+        // If no structured format found, put everything in coreBusiness
+        if (Object.keys(parsed).length === 0 && description) {
+            parsed.coreBusiness = description;
+        }
+        
+        return parsed;
+    };
+    
+    // Populate form data when company data loads
+    useEffect(() => {
+        if (company) {
+            const parsedDescription = parseStructuredDescription(company.description);
+            setFormData({
+                name: company.name || '',
+                coreBusiness: parsedDescription.coreBusiness || '',
+                valueProposition: parsedDescription.valueProposition || '',
+                productsServices: parsedDescription.productsServices || '',
+                keyDifferentiators: parsedDescription.keyDifferentiators || '',
+                companyStage: parsedDescription.companyStage || '',
+                industry: parsedDescription.industry || '',
+                businessGoals: parsedDescription.businessGoals || '',
+                painPointsSolved: parsedDescription.painPointsSolved || '',
+                targetMarket: company.target_market || '',
+                websiteUrl: company.website_url || ''
+            });
+        }
+    }, [company]);
+    
     useEffect(() => {
         // Only show skeletons on the very first load when no data exists
         if (companyFiles !== undefined) {
@@ -89,6 +159,91 @@ const CompanyProfile = () => {
 
     const handleUploadClick = () => {
         setIsUploadModalOpen(true);
+    };
+    
+    const handleEditClick = () => {
+        setIsEditMode(true);
+    };
+    
+    const handleCancelEdit = () => {
+        // Reset form data to current company data
+        if (company) {
+            const parsedDescription = parseStructuredDescription(company.description);
+            setFormData({
+                name: company.name || '',
+                coreBusiness: parsedDescription.coreBusiness || '',
+                valueProposition: parsedDescription.valueProposition || '',
+                productsServices: parsedDescription.productsServices || '',
+                keyDifferentiators: parsedDescription.keyDifferentiators || '',
+                companyStage: parsedDescription.companyStage || '',
+                industry: parsedDescription.industry || '',
+                businessGoals: parsedDescription.businessGoals || '',
+                painPointsSolved: parsedDescription.painPointsSolved || '',
+                targetMarket: company.target_market || '',
+                websiteUrl: company.website_url || ''
+            });
+        }
+        setIsEditMode(false);
+    };
+    
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+    
+    const handleSave = async () => {
+        setIsSaving(true);
+        
+        try {
+            // Build structured description from form fields
+            const structuredDescription = [
+                'BUSINESS PROFILE:',
+                formData.coreBusiness && `Core Business: ${formData.coreBusiness}`,
+                formData.valueProposition && `Value Proposition: ${formData.valueProposition}`,
+                formData.productsServices && `Products/Services: ${formData.productsServices}`,
+                formData.keyDifferentiators && `Key Differentiators: ${formData.keyDifferentiators}`,
+                formData.companyStage && `Company Stage: ${formData.companyStage}`,
+                formData.industry && `Industry: ${formData.industry}`,
+                formData.businessGoals && `Business Goals: ${formData.businessGoals}`,
+                formData.painPointsSolved && `Pain Points Solved: ${formData.painPointsSolved}`
+            ].filter(Boolean).join('\n');
+            
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            const response = await fetch(API_ENDPOINTS.updateCompany, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: formData.name,
+                    description: structuredDescription,
+                    target_market: formData.targetMarket,
+                    website_url: formData.websiteUrl
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update company profile');
+            }
+            
+            // Invalidate and refetch company data
+            await queryClient.invalidateQueries(['company']);
+            
+            setIsEditMode(false);
+            console.log('Company profile updated successfully');
+        } catch (error) {
+            console.error('Error updating company profile:', error);
+            alert('Failed to update company profile. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleUploadSuccess = (uploadedFiles) => {
@@ -300,64 +455,270 @@ const CompanyProfile = () => {
                 <p className="text-gray-600">Update your company profile to help Cassius understand your business</p>
             </div>
             
-            <h2 className="text-2xl font-semibold mb-1">Company Details</h2>
-            <br></br>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold">Company Details</h2>
+                {!isEditMode && (
+                    <button
+                        onClick={handleEditClick}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                    >
+                        Edit Profile
+                    </button>
+                )}
+            </div>
+            
             <div style={{ maxWidth: '800px', marginLeft: '1rem', marginRight: '1rem' }}>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '120px 1fr',
-                    gap: '1rem',
-                    padding: '1rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    backgroundColor: '#f9f9f9',
-                    alignItems: 'center'
-                }}>
-                    {/* Company Details Display - Only show fields with values */}
-                    {company.name && (
-                        <>
-                            <div style={{ padding: '0.5rem', fontWeight: '500' }}>
-                                Name
+                {isEditMode ? (
+                    // Edit Mode
+                    <div className="space-y-4 p-6 border border-gray-200 rounded-lg bg-white">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Your company name"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Core Business</label>
+                            <textarea
+                                value={formData.coreBusiness}
+                                onChange={(e) => handleInputChange('coreBusiness', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="3"
+                                placeholder="What does your company do? Describe your core business activities"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Value Proposition</label>
+                            <textarea
+                                value={formData.valueProposition}
+                                onChange={(e) => handleInputChange('valueProposition', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="2"
+                                placeholder="What unique value do you provide to customers?"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Products/Services</label>
+                            <textarea
+                                value={formData.productsServices}
+                                onChange={(e) => handleInputChange('productsServices', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="2"
+                                placeholder="List your main products or services"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Key Differentiators</label>
+                            <textarea
+                                value={formData.keyDifferentiators}
+                                onChange={(e) => handleInputChange('keyDifferentiators', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="2"
+                                placeholder="What sets you apart from competitors?"
+                            />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Company Stage</label>
+                                <select
+                                    value={formData.companyStage}
+                                    onChange={(e) => handleInputChange('companyStage', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">Select stage</option>
+                                    <option value="Pre-revenue">Pre-revenue</option>
+                                    <option value="Startup">Startup</option>
+                                    <option value="Growth">Growth</option>
+                                    <option value="Scale-up">Scale-up</option>
+                                    <option value="Enterprise">Enterprise</option>
+                                </select>
                             </div>
-                            <div style={{ padding: '0.5rem' }}>
-                                {company.name}
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Industry/Vertical</label>
+                                <input
+                                    type="text"
+                                    value={formData.industry}
+                                    onChange={(e) => handleInputChange('industry', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="e.g., SaaS, E-commerce, FinTech"
+                                />
                             </div>
-                        </>
-                    )}
-                    
-                    {company.description && (
-                        <>
-                            <div style={{ padding: '0.5rem', fontWeight: '500' }}>
-                                Description
-                            </div>
-                            <div style={{ padding: '0.5rem' }}>
-                                {company.description}
-                            </div>
-                        </>
-                    )}
-                    
-                    {company.target_market && (
-                        <>
-                            <div style={{ padding: '0.5rem', fontWeight: '500' }}>
-                                Target Market
-                            </div>
-                            <div style={{ padding: '0.5rem' }}>
-                                {company.target_market}
-                            </div>
-                        </>
-                    )}
- 
-                    {company.website_url && (
-                        <>
-                            <div style={{ padding: '0.5rem', fontWeight: '500' }}>
-                                Website
-                            </div>
-                            <div style={{ padding: '0.5rem' }}>
-                                {company.website_url}
-                            </div>
-                        </>
-                    )}
-                </div>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Target Market</label>
+                            <input
+                                type="text"
+                                value={formData.targetMarket}
+                                onChange={(e) => handleInputChange('targetMarket', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Who is your ideal customer?"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Business Goals</label>
+                            <textarea
+                                value={formData.businessGoals}
+                                onChange={(e) => handleInputChange('businessGoals', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="2"
+                                placeholder="What are your primary business objectives?"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Pain Points Solved</label>
+                            <textarea
+                                value={formData.painPointsSolved}
+                                onChange={(e) => handleInputChange('painPointsSolved', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="2"
+                                placeholder="What customer problems do you solve?"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                            <input
+                                type="url"
+                                value={formData.websiteUrl}
+                                onChange={(e) => handleInputChange('websiteUrl', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="https://yourcompany.com"
+                            />
+                        </div>
+                        
+                        <div className="flex justify-end space-x-3 pt-4">
+                            <button
+                                onClick={handleCancelEdit}
+                                disabled={isSaving}
+                                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center cursor-pointer"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                        </svg>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save Changes'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    // View Mode
+                    <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '160px 1fr',
+                        gap: '1rem',
+                        padding: '1rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '8px',
+                        backgroundColor: '#f9f9f9'
+                    }}>
+                        {formData.name && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Name</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.name}</div>
+                            </>
+                        )}
+                        
+                        {formData.coreBusiness && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Core Business</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.coreBusiness}</div>
+                            </>
+                        )}
+                        
+                        {formData.valueProposition && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Value Proposition</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.valueProposition}</div>
+                            </>
+                        )}
+                        
+                        {formData.productsServices && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Products/Services</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.productsServices}</div>
+                            </>
+                        )}
+                        
+                        {formData.keyDifferentiators && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Key Differentiators</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.keyDifferentiators}</div>
+                            </>
+                        )}
+                        
+                        {formData.companyStage && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Company Stage</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.companyStage}</div>
+                            </>
+                        )}
+                        
+                        {formData.industry && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Industry</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.industry}</div>
+                            </>
+                        )}
+                        
+                        {formData.targetMarket && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Target Market</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.targetMarket}</div>
+                            </>
+                        )}
+                        
+                        {formData.businessGoals && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Business Goals</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.businessGoals}</div>
+                            </>
+                        )}
+                        
+                        {formData.painPointsSolved && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Pain Points Solved</div>
+                                <div style={{ padding: '0.5rem' }}>{formData.painPointsSolved}</div>
+                            </>
+                        )}
+                        
+                        {formData.websiteUrl && (
+                            <>
+                                <div style={{ padding: '0.5rem', fontWeight: '500' }}>Website</div>
+                                <div style={{ padding: '0.5rem' }}>
+                                    <a href={formData.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                        {formData.websiteUrl}
+                                    </a>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
 
             <br></br>
