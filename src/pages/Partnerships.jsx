@@ -6,27 +6,48 @@ import { usePartnerships } from '../hooks/usePartnerships';
 function Partnerships() {
   const { influencers, isLoading, error } = usePartnerships();
   const [detailsModal, setDetailsModal] = useState(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
-  // ESC key handler for modal
+  // ESC key handler for modals
   useEffect(() => {
     const handleEscapeKey = (event) => {
-      if (event.key === 'Escape' && detailsModal) {
-        setDetailsModal(null);
+      if (event.key === 'Escape') {
+        if (detailsModal) {
+          setDetailsModal(null);
+        } else if (showInfoModal) {
+          setShowInfoModal(false);
+        }
       }
     };
 
-    if (detailsModal) {
+    if (detailsModal || showInfoModal) {
       document.addEventListener('keydown', handleEscapeKey);
       return () => document.removeEventListener('keydown', handleEscapeKey);
     }
-  }, [detailsModal]);
+  }, [detailsModal, showInfoModal]);
 
   if (isLoading) {
     return (
       <div className="p-6 bg-white min-h-screen">
         <div className="mb-12">
-          <h1 className="text-3xl font-bold mb-1">Partnerships</h1>
-          <p className="text-gray-600">Find Instagram creators to grow your business</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-1">Partnerships</h1>
+              <p className="text-gray-600">Find Instagram creators to grow your business</p>
+            </div>
+            
+            {/* Information button */}
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer transition-colors"
+              title="Learn about partnership strategy"
+            >
+              <span className="text-sm">How to use</span>
+              <div className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                <span className="text-xs font-bold">?</span>
+              </div>
+            </button>
+          </div>
         </div>
         <div className="mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -67,8 +88,24 @@ function Partnerships() {
     return (
       <div className="p-6 bg-white min-h-screen">
         <div className="mb-12">
-          <h1 className="text-3xl font-bold mb-1">Partnerships</h1>
-          <p className="text-gray-600">Find Instagram creators to grow your business</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-1">Partnerships</h1>
+              <p className="text-gray-600">Find Instagram creators to grow your business</p>
+            </div>
+            
+            {/* Information button */}
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer transition-colors"
+              title="Learn about partnership strategy"
+            >
+              <span className="text-sm">How to use</span>
+              <div className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                <span className="text-xs font-bold">?</span>
+              </div>
+            </button>
+          </div>
         </div>
         <div className="mt-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -83,8 +120,24 @@ function Partnerships() {
   return (
     <div className="p-6 bg-white min-h-screen">
       <div className="mb-12">
-        <h1 className="text-3xl font-bold mb-1">Partnerships</h1>
-        <p className="text-gray-600">Find Instagram creators to grow your business</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Partnerships</h1>
+            <p className="text-gray-600">Find Instagram creators to grow your business</p>
+          </div>
+          
+          {/* Information button */}
+          <button
+            onClick={() => setShowInfoModal(true)}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer transition-colors"
+            title="Learn about partnership strategy"
+          >
+            <span className="text-sm">How to use</span>
+            <div className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+              <span className="text-xs font-bold">?</span>
+            </div>
+          </button>
+        </div>
       </div>
       
       <div className="mt-8">
@@ -203,6 +256,111 @@ function Partnerships() {
                 className="px-4 py-2 text-gray-700 hover:text-gray-900 cursor-pointer"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info Modal */}
+      {showInfoModal && (
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{backgroundColor: 'rgba(0, 0, 0, 0.75)'}} onClick={() => setShowInfoModal(false)}>
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Partnership Strategy</h3>
+              <button 
+                onClick={() => setShowInfoModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 prose prose-blue max-w-none">
+              <p className="text-gray-700 leading-relaxed mb-4">
+                Partnerships with creators and micro-influencers can be one of the most powerful ways to grow. Right now, Cassius is focused on finding the perfect influencers for your product.
+              </p>
+              
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Why this matters:</h4>
+              <ul className="space-y-2 mb-6">
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>Influence drives action:</strong> People trust recommendations from creators they already follow.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>Micro-influencers convert:</strong> Smaller creators often have higher engagement and more authentic communities.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>Clear deals win:</strong> Approaching influencers without a plan makes it harder to get results.</span>
+                </li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Tips for usage:</h4>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <div>
+                    <span>Always have a campaign goal in mind before reaching out. Do you want to:</span>
+                    <ul className="mt-2 ml-4 space-y-1">
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>Pay them upfront?</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>Ask for their rates first?</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>Structure a performance deal (like $1 per 1,000 views)?</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>Offer an affiliate arrangement?</span>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span>Be clear on what you want and how you'll measure success. This makes negotiation smoother and more attractive for the influencer.</span>
+                </li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Coming soon:</h4>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>Messaging Agent:</strong> Reach out directly to creators from inside Cassius, following best practices on deal structures.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>Negotiation Agent:</strong> Set parameters and let AI handle the back-and-forth to secure deals for you.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>AI UGC Model:</strong> Automatically generate influencer-style videos tailored to your brand</span>
+                </li>
+              </ul>
+              
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                <p className="text-blue-800 font-medium">
+                  For now, focus on identifying the right creators and experimenting with deal structures that fit your budget and goals.
+                </p>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+              >
+                Got it!
               </button>
             </div>
           </div>
