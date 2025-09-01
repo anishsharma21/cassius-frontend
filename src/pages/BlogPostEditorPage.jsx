@@ -108,6 +108,25 @@ const BlogPostEditorPage = () => {
     }
   }, [blogPost]);
 
+  // Listen for stream end signal from ChatContext
+  useEffect(() => {
+    const handleStreamEnd = () => {
+      if (isReceivingContent && blogPost) {
+        console.log('🎯 Stream end signal received, checking final content');
+        const finalContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
+        if (finalContent && finalContent.length > 0) {
+          console.log('📝 Final content from stream end signal, calling autoSaveBlogPost');
+          autoSaveBlogPost(finalContent);
+          localStorage.removeItem(`blogPostContent_${blogPost.slug}`);
+          setIsReceivingContent(false);
+        }
+      }
+    };
+
+    window.addEventListener('streamEnd', handleStreamEnd);
+    return () => window.removeEventListener('streamEnd', handleStreamEnd);
+  }, [isReceivingContent, blogPost]);
+
   // Simplified content stream function
   const startContentStream = () => {
     let lastContentLength = 0;
@@ -117,6 +136,8 @@ const BlogPostEditorPage = () => {
     const interval = setInterval(async () => {
       // Check for content updates
       const currentContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
+      console.log('🔍 Checking localStorage for slug:', blogPost.slug, 'content found:', !!currentContent, 'length:', currentContent?.length || 0);
+      
       if (currentContent) {
         const newContentLength = currentContent.length;
         
@@ -130,10 +151,11 @@ const BlogPostEditorPage = () => {
         } else {
           // No new content, increment counter
           noUpdateCount++;
+          console.log('⏳ No content update, counter:', noUpdateCount);
           
-          // If no updates for 1 second (10 * 100ms), assume streaming is complete
-          if (noUpdateCount >= 10) {
-            console.log('🎯 No content updates for 1 second, assuming streaming complete');
+          // If no updates for 2 seconds (20 * 100ms), assume streaming is complete
+          if (noUpdateCount >= 20) {
+            console.log('🎯 No content updates for 2 seconds, assuming streaming complete');
             
             if (currentContent && currentContent.length > 0) {
               console.log('📝 Final content found, calling autoSaveBlogPost');
@@ -161,6 +183,7 @@ const BlogPostEditorPage = () => {
       } else {
         // No content in localStorage, increment counter
         noUpdateCount++;
+        console.log('⏳ No content in localStorage, counter:', noUpdateCount);
         
         // If no content for 1 second (10 * 100ms), stop monitoring
         if (noUpdateCount >= 10) {

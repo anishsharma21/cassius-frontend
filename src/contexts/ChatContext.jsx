@@ -162,14 +162,29 @@ export const ChatProvider = ({ children }) => {
                     const match = data.content.match(/---REDIRECT_BLOG_POST_EDITOR:(.+)---/);
                     if (match) {
                       const slug = match[1];
-                      navigate(`/dashboard/geo/${slug}`);
+                      // Small delay to ensure stream location is fully set before redirect
+                      setTimeout(() => {
+                        console.log('🚀 Redirecting to blog post editor:', slug);
+                        navigate(`/dashboard/geo/${slug}`);
+                      }, 100);
                     }
                   } else if (data.content.startsWith('---LOAD_STREAM_BLOG_POST_EDITOR:')) {
                     // Switch stream to blog post editor
                     const match = data.content.match(/---LOAD_STREAM_BLOG_POST_EDITOR:(.+)---/);
                     if (match) {
                       const slug = match[1];
+                      // Clear any existing content in localStorage for this slug
+                      const existingContent = localStorage.getItem(`blogPostContent_${slug}`);
+                      if (existingContent) {
+                        console.log('🧹 Clearing existing localStorage content for slug:', slug, 'length:', existingContent.length);
+                        localStorage.removeItem(`blogPostContent_${slug}`);
+                      }
+                      
+                      // Update both state and ref immediately to ensure content routing works
+                      console.log('🎯 Setting stream location to BLOG_POST:', slug);
                       setStreamLocation(`BLOG_POST:${slug}`);
+                      streamLocationRef.current = `BLOG_POST:${slug}`;
+                      console.log('✅ Stream location updated - streamLocationRef.current:', streamLocationRef.current);
                     }
                   } else if (data.content.startsWith('---STREAM_START---')) {
                     // Streaming has begun
@@ -181,6 +196,14 @@ export const ChatProvider = ({ children }) => {
                   } else if (data.content.startsWith('---STREAM_END---')) {
                     // Streaming has stopped
                     setIsStreaming(false);
+                    
+                    // Dispatch stream end event for blog post editor
+                    if (streamLocationRef.current.startsWith('BLOG_POST:')) {
+                      const blogPostSlug = streamLocationRef.current.split(':')[1];
+                      console.log('🎯 Stream ended for blog post, dispatching streamEnd event');
+                      window.dispatchEvent(new CustomEvent('streamEnd', { detail: { slug: blogPostSlug } }));
+                    }
+                    
                     updateAIMessage(aiMessageId, { 
                       isStreaming: false, 
                       content: 'Successfully created a new blog post!' 
@@ -192,12 +215,20 @@ export const ChatProvider = ({ children }) => {
                     // Regular content - route based on streamLocationRef
                     let shouldAddToChat = true;
                     
+                    console.log('🔄 Content routing - streamLocationRef.current:', streamLocationRef.current, 'content length:', data.content.length);
+                    
                     if (streamLocationRef.current.startsWith('BLOG_POST:')) {
                       // Route content to blog post editor
                       const blogPostSlug = streamLocationRef.current.split(':')[1];
                       const existingContent = localStorage.getItem(`blogPostContent_${blogPostSlug}`) || '';
+                      console.log('🔍 Before write - existingContent length:', existingContent.length);
+                      console.log('🔍 Before write - existingContent preview:', existingContent.substring(0, 200));
+                      
                       const newContent = existingContent + data.content;
                       localStorage.setItem(`blogPostContent_${blogPostSlug}`, newContent);
+                      
+                      console.log('📝 Routed content to blog post editor:', blogPostSlug, 'total length:', newContent.length);
+                      console.log('📝 New content added:', data.content.substring(0, 100));
                       shouldAddToChat = false;
                     }
                     
