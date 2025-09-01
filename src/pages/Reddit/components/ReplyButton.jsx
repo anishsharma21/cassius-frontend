@@ -1,11 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useContext, useState } from 'react';
 import Tooltip from './Tooltip';
 import { useUpdateRedditRepliedTo } from '../../../hooks/useUpdateRedditRepliedTo';
 import { useRedditReply } from '../../../hooks/useRedditReply';
+import { ChatContext } from '../../../contexts/ChatContextTypes';
 
 const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = false, content = "", contentType = "post", link = "", postContent = "", leadId = "", onReplyUpdate }) => {
   const updateRepliedTo = useUpdateRedditRepliedTo();
-  const { generateReply } = useRedditReply();
+  const { generateReply, isGenerating } = useRedditReply();
+  const { isStreaming } = useContext(ChatContext);
+  
+  // Local state to track if this specific button is generating
+  const [isLocallyGenerating, setIsLocallyGenerating] = useState(false);
   
   // Check if there was an error updating the backend
   const hasBackendError = updateRepliedTo.isError;
@@ -45,7 +50,17 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
   };
 
   const handleReplyClick = async () => {
+    // Early return if this button should be disabled - this should never happen due to disabled state
+    if (shouldDisableButton || isThisButtonGenerating) {
+      console.log('⚠️ Reply generation already in progress, ignoring click');
+      return;
+    }
+    
     console.log('🔴 ReplyButton clicked with data:', { content, contentType, link, postContent, leadId, isReplied });
+    console.log('🔄 Setting isLocallyGenerating to true');
+    
+    // Set local generating state immediately for ANY button click
+    setIsLocallyGenerating(true);
     
     // Immediately update the UI for optimistic response
     if (onReplyUpdate) {
@@ -86,6 +101,9 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
           
           console.log('✅ Generated reply streaming completed');
           
+          // Reset local generating state
+          setIsLocallyGenerating(false);
+          
           // Call the original onClick handler
           if (onClick) {
             onClick();
@@ -93,11 +111,30 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
         } catch (error) {
           console.error('❌ Failed to generate reply:', error);
           
+          // Reset local generating state on error
+          setIsLocallyGenerating(false);
+          
+          // Dispatch completion event to reset streaming state on error
+          window.dispatchEvent(new CustomEvent('redditReplyStream', {
+            detail: {
+              content: '',
+              timestamp: new Date().toISOString(),
+              isStreaming: false,
+              isComplete: true,
+              isError: true
+            }
+          }));
+          
           // Revert the optimistic update on error
           if (onReplyUpdate) {
             onReplyUpdate(isReplied);
           }
         }
+      } else {
+        // If isReplied = true, we're just toggling back to unreplied, no API call needed
+        // Reset the generating state immediately
+        console.log('🔄 isReplied=true, resetting isLocallyGenerating to false');
+        setIsLocallyGenerating(false);
       }
     
     // Now update the backend in the background (don't await)
@@ -109,11 +146,39 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
     }
   };
 
+  // Check if any reply is being generated (for disabling all buttons) 
+  const isAnyReplyGenerating = isStreaming;
+  
+  // Check if THIS specific button is generating (use both hook state and local state)
+  const isThisButtonGenerating = isGenerating || isLocallyGenerating;
+  
+  // A button should be disabled if ANY reply is generating, unless it's the one currently generating
+  const shouldDisableButton = isAnyReplyGenerating && !isThisButtonGenerating;
+  
+  // Debug logging
+  useEffect(() => {
+    console.log(`🔍 ReplyButton [${leadId}] state update:`, {
+      isStreaming,
+      isGenerating, 
+      isAnyReplyGenerating,
+      isThisButtonGenerating,
+      shouldDisableButton,
+      buttonText: isThisButtonGenerating ? 'Generating...' : text,
+      buttonStyle: isThisButtonGenerating ? 'BLUE_GENERATING' : shouldDisableButton ? 'GRAY_DISABLED' : 'NORMAL',
+      contentPreview: content.substring(0, 30) + '...'
+    });
+  }, [isStreaming, isGenerating, isAnyReplyGenerating, isThisButtonGenerating, shouldDisableButton, leadId, content, text]);
+
   if (isReplied) {
     return (
       <button 
-        className="inline-flex items-center px-3 py-1 rounded-full text-sm border bg-green-50 border-green-200 text-green-700 gap-1 cursor-pointer hover:bg-green-100 transition-colors"
-        onClick={handleReplyClick}
+        className={`inline-flex items-center px-3 py-1 rounded-full text-sm border bg-green-50 border-green-200 text-green-700 gap-1 transition-colors ${
+          shouldDisableButton 
+            ? 'opacity-50 cursor-not-allowed' 
+            : 'cursor-pointer hover:bg-green-100'
+        }`}
+        onClick={shouldDisableButton ? undefined : handleReplyClick}
+        disabled={shouldDisableButton}
       >
         Replied
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,15 +188,26 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
     );
   }
 
-
-
   return (
     <button 
-      className="flex items-center gap-2 px-4 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors cursor-pointer"
-      onClick={handleReplyClick}
+      className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm transition-colors ${
+        isThisButtonGenerating
+          ? 'bg-blue-100 text-blue-600 cursor-wait' // Changed from cursor-not-allowed to cursor-wait
+          : shouldDisableButton 
+            ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-50' 
+            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer'
+      }`}
+      onClick={shouldDisableButton ? undefined : handleReplyClick} // Allow click on generating button for debugging
+      disabled={shouldDisableButton} // Don't disable the generating button
     >
-      <span>{text}</span>
-      {getIcon(iconID)}
+      <span>{isThisButtonGenerating ? 'Generating...' : text}</span>
+      {isThisButtonGenerating ? (
+        <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      ) : (
+        getIcon(iconID)
+      )}
     </button>
   );
 };
