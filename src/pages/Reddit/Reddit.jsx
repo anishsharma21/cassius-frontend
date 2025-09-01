@@ -34,6 +34,8 @@ const LeadsTabContent = ({ columns, tableData, actions, currentPage, totalPages,
 // Posts Tab Content Component
 const PostsTabContent = () => {
   const [selectedSubreddit, setSelectedSubreddit] = useState('');
+  const [customSubreddit, setCustomSubreddit] = useState('');
+  const [subredditInputMode, setSubredditInputMode] = useState('dropdown'); // 'dropdown' or 'custom'
   const [userDescription, setUserDescription] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -64,15 +66,17 @@ const PostsTabContent = () => {
   const { updatePost: updatePostAPI, markAsPosted, markAsDraft, isUpdating } = useUpdatePost();
 
   const handleGenerate = async () => {
-    if (!selectedSubreddit) {
-      alert('Please select a subreddit');
+    const targetSubreddit = subredditInputMode === 'custom' ? customSubreddit : selectedSubreddit;
+    
+    if (!targetSubreddit) {
+      alert('Please select a subreddit or enter a custom one');
       return;
     }
 
     setGeneratedContent('');
     
     await generatePost(
-      selectedSubreddit,
+      targetSubreddit,
       userDescription,
       (chunk) => {
         setGeneratedContent(prev => prev + chunk);
@@ -84,6 +88,7 @@ const PostsTabContent = () => {
         refetchPosts();
         setShowForm(false);
         setSelectedSubreddit('');
+        setCustomSubreddit('');
         setUserDescription('');
         setGeneratedContent('');
       }
@@ -156,19 +161,68 @@ const PostsTabContent = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Target Subreddit
                 </label>
-                <select
-                  value={selectedSubreddit}
-                  onChange={(e) => setSelectedSubreddit(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={subredditsLoading || isGenerating}
-                >
-                  <option value="">Select a subreddit...</option>
-                  {subreddits.map((subreddit) => (
-                    <option key={subreddit.id} value={subreddit.subreddit_name}>
-                      r/{subreddit.subreddit_name}
-                    </option>
-                  ))}
-                </select>
+                
+                {/* Toggle between dropdown and custom input */}
+                <div className="flex items-center gap-4 mb-3">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="subredditMode"
+                      value="dropdown"
+                      checked={subredditInputMode === 'dropdown'}
+                      onChange={(e) => {
+                        setSubredditInputMode(e.target.value);
+                        setCustomSubreddit('');
+                      }}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Choose from your subreddits</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="subredditMode"
+                      value="custom"
+                      checked={subredditInputMode === 'custom'}
+                      onChange={(e) => {
+                        setSubredditInputMode(e.target.value);
+                        setSelectedSubreddit('');
+                      }}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Enter custom subreddit</span>
+                  </label>
+                </div>
+
+                {subredditInputMode === 'dropdown' ? (
+                  <select
+                    value={selectedSubreddit}
+                    onChange={(e) => setSelectedSubreddit(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={subredditsLoading || isGenerating}
+                  >
+                    <option value="">Select a subreddit...</option>
+                    {subreddits.map((subreddit) => (
+                      <option key={subreddit.id} value={subreddit.subreddit_name}>
+                        r/{subreddit.subreddit_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">r/</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={customSubreddit}
+                      onChange={(e) => setCustomSubreddit(e.target.value)}
+                      placeholder="Enter subreddit name (e.g., AskReddit)"
+                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={isGenerating}
+                    />
+                  </div>
+                )}
               </div>
               
               <div>
@@ -188,7 +242,11 @@ const PostsTabContent = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleGenerate}
-                  disabled={!selectedSubreddit || isGenerating}
+                  disabled={
+                    (subredditInputMode === 'dropdown' && !selectedSubreddit) ||
+                    (subredditInputMode === 'custom' && !customSubreddit.trim()) ||
+                    isGenerating
+                  }
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                 >
                   {isGenerating ? 'Generating...' : 'Generate Post'}
@@ -547,11 +605,6 @@ function Reddit() {
     } else {
       setLocalRepliedCount(prev => Math.max(0, prev - 1));
     }
-  };
-
-  const handleReplyCountUpdate = () => {
-    // Update the local counts when API call succeeds
-    // This will be called by the ReplyButton after successful API update
   };
 
   // Show loading state
