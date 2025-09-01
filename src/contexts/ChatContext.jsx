@@ -278,6 +278,8 @@ export const ChatProvider = ({ children }) => {
       updateAIMessage(streamingMessageId, { isStreaming: false });
       setStreamingMessageId(null);
     }
+    // Reset streaming state when Reddit reply completes
+    setIsStreaming(false);
   }, [streamingMessageId, updateAIMessage]);
 
   const resetStreamingState = useCallback(() => {
@@ -293,6 +295,8 @@ export const ChatProvider = ({ children }) => {
       localStorage.removeItem('guidePrompt');
       
       if (promptData.isGeneratedReply && promptData.isStreaming) {
+        // Set streaming state immediately when Reddit reply starts
+        setIsStreaming(true);
         createUserMessage(promptData.content, promptData.redditLink, promptData.contentType);
         const aiMessageId = createAIMessage(promptData.redditLink, promptData.contentType);
         setStreamingMessageId(aiMessageId);
