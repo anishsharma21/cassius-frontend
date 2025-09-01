@@ -116,13 +116,13 @@ function Strategy() {
   }, [conversation.length, showConversation]);
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden">
+    <div className="h-full flex flex-col relative">
       {/* Landing page view */}
-      <div className={`absolute inset-0 flex flex-col strategy-transition ${
+      <div className={`absolute inset-0 flex flex-col strategy-transition overflow-y-auto ${
         showConversation ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
       } ${isTransitioning ? 'pointer-events-none' : ''}`}>
         {/* Spacer to push chat section down */}
-        <div className="flex-grow"></div>
+        <div className="min-h-[10vh]"></div>
           
           {/* Centered Chat Section */}
           <div className="flex flex-col items-center justify-center px-8 py-8">
@@ -148,11 +148,8 @@ function Strategy() {
             </div>
           </div>
 
-          {/* Spacer to balance the layout */}
-          <div className="flex-grow"></div>
-
-          {/* Quick Access Links - Fixed at bottom */}
-          <div className="flex-shrink-0 px-8 pb-12">
+          {/* Quick Access Links */}
+          <div className="px-8 py-12">
             <div className="w-full max-w-6xl mx-auto space-y-8">
               
               {/* Guide Card - Own Row */}
@@ -257,6 +254,9 @@ function Strategy() {
               </div>
             </div>
           </div>
+          
+          {/* Bottom spacing */}
+          <div className="h-16"></div>
         </div>
       
       {/* Full conversation view */}
