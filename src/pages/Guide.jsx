@@ -1,20 +1,69 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const Guide = () => {
   const { user: userData } = useAuth();
-  const [openSections, setOpenSections] = useState({
-    welcome: true, // Keep welcome section open by default
-    gettingStarted: false,
-    features: false,
-    roadmap: false
+  const navigate = useNavigate();
+  
+  // Initialize state from localStorage or default values
+  const [openSections, setOpenSections] = useState(() => {
+    const saved = localStorage.getItem('guideSectionsState');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Error parsing saved guide sections state:', error);
+      }
+    }
+    return {
+      welcome: true, // Keep welcome section open by default
+      gettingStarted: false,
+      features: false,
+      roadmap: false
+    };
   });
+
+  // Initialize checklist state from localStorage or default values
+  const [checkedItems, setCheckedItems] = useState(() => {
+    const saved = localStorage.getItem('guideChecklistState');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Error parsing saved checklist state:', error);
+      }
+    }
+    return {
+      adblock: false,
+      profile: false,
+      strategy: false,
+      execute: false,
+      track: false,
+      feedback: false
+    };
+  });
+
+  // Save to localStorage whenever states change
+  useEffect(() => {
+    localStorage.setItem('guideSectionsState', JSON.stringify(openSections));
+  }, [openSections]);
+
+  useEffect(() => {
+    localStorage.setItem('guideChecklistState', JSON.stringify(checkedItems));
+  }, [checkedItems]);
 
   const toggleSection = (section) => {
     setOpenSections(prev => ({
       ...prev,
       [section]: !prev[section]
+    }));
+  };
+
+  const toggleCheckItem = (item) => {
+    setCheckedItems(prev => ({
+      ...prev,
+      [item]: !prev[item]
     }));
   };
 
@@ -24,7 +73,7 @@ const Guide = () => {
       <div className="border border-gray-200 rounded-lg">
         <button
           onClick={() => toggleSection('welcome')}
-          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg border-b border-gray-200 flex items-center justify-between"
+          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg border-b border-gray-200 flex items-center justify-between cursor-pointer"
         >
           <h2 className="text-xl font-semibold">Welcome to the Cassius beta!</h2>
           <svg
@@ -55,7 +104,7 @@ const Guide = () => {
       <div className="border border-gray-200 rounded-lg">
         <button
           onClick={() => toggleSection('gettingStarted')}
-          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg border-b border-gray-200 flex items-center justify-between"
+          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg border-b border-gray-200 flex items-center justify-between cursor-pointer"
         >
           <h2 className="text-xl font-semibold">How to get started</h2>
           <svg
@@ -69,13 +118,98 @@ const Guide = () => {
         </button>
         {openSections.gettingStarted && (
           <div className="p-4 space-y-3">
-            <p className="text-base">1. Please turn off your Adblock to make sure we can see how you use the platform</p>
-            <p className="text-base">2. Fill out your Profile Library with as much detail as possible about your business</p>
-            <p className="text-base">3. Ask Cassius for an initial strategy</p>
-            <p className="text-base">4. Start executing the strategies in each hub</p>
-            <p className="text-base">5. Track results</p>
-            <p className="text-base">6. Share your feedback with us</p>
-            <p className="text-base">You are helping us create something that we believe can change how small teams grow. We are so grateful to have you on this journey with us.</p>
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="adblock"
+                checked={checkedItems.adblock}
+                onChange={() => toggleCheckItem('adblock')}
+                className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="adblock" className="text-base cursor-pointer">
+                Please turn off your Adblock (if you have one) to make sure we can see how you use the platform
+              </label>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="profile"
+                checked={checkedItems.profile}
+                onChange={() => toggleCheckItem('profile')}
+                className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="profile" className="text-base cursor-pointer">
+                Fill out your{' '}
+                <button 
+                  onClick={() => navigate('/dashboard/company-profile')} 
+                  className="inline-flex items-center px-2 py-0.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm transition-colors duration-200 border border-blue-200 hover:border-blue-300 mx-1 cursor-pointer"
+                >
+                  Company Profile
+                </button>
+                {' '}with as much detail as possible about your business
+              </label>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="strategy"
+                checked={checkedItems.strategy}
+                onChange={() => toggleCheckItem('strategy')}
+                className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="strategy" className="text-base cursor-pointer">
+                Ask{' '}
+                <button 
+                  onClick={() => navigate('/dashboard/strategy')} 
+                  className="inline-flex items-center px-2 py-0.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-sm transition-colors duration-200 border border-green-200 hover:border-green-300 mx-1 cursor-pointer"
+                >
+                  Cassius for an initial strategy
+                </button>
+              </label>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="execute"
+                checked={checkedItems.execute}
+                onChange={() => toggleCheckItem('execute')}
+                className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="execute" className="text-base cursor-pointer">
+                Start executing the strategies in each hub
+              </label>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="track"
+                checked={checkedItems.track}
+                onChange={() => toggleCheckItem('track')}
+                className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="track" className="text-base cursor-pointer">
+                Track results
+              </label>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="feedback"
+                checked={checkedItems.feedback}
+                onChange={() => toggleCheckItem('feedback')}
+                className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="feedback" className="text-base cursor-pointer">
+                Share your feedback with us
+              </label>
+            </div>
+            
+            <p className="text-base mt-4">You are helping us create something that we believe can change how small teams grow. We are so grateful to have you on this journey with us.</p>
             <p className="text-base">Happy marketing!</p>
           </div>
         )}
@@ -85,7 +219,7 @@ const Guide = () => {
       <div className="border border-gray-200 rounded-lg">
         <button
           onClick={() => toggleSection('features')}
-          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg border-b border-gray-200 flex items-center justify-between"
+          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg border-b border-gray-200 flex items-center justify-between cursor-pointer"
         >
           <h2 className="text-xl font-semibold">What you can try right now</h2>
           <svg
@@ -114,7 +248,7 @@ const Guide = () => {
       <div className="border border-gray-200 rounded-lg">
         <button
           onClick={() => toggleSection('roadmap')}
-          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg border-b border-gray-200 flex items-center justify-between"
+          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg border-b border-gray-200 flex items-center justify-between cursor-pointer"
         >
           <h2 className="text-xl font-semibold">What we're working towards</h2>
           <svg
