@@ -6,6 +6,7 @@ import cassiusLogo from '../assets/cassius.png';
 function SignUp() {
   const [formData, setFormData] = useState({
     // User details
+    first_name: '',
     email: '',
     password: '',
     website_url: 'https://',
@@ -19,6 +20,7 @@ function SignUp() {
   const [loading, setLoading] = useState(false);
   // Focus states for form fields
   const [focusedFields, setFocusedFields] = useState({
+    first_name: false,
     email: false,
     password: false,
     website_url: false,
@@ -61,6 +63,9 @@ function SignUp() {
 
   const validateStep1 = () => {
     const newErrors = {};
+    if (!formData.first_name.trim()) {
+      newErrors.first_name = 'Required';
+    }
     if (!formData.email.trim()) {
       newErrors.email = 'Required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -116,6 +121,7 @@ function SignUp() {
     try {
       // Prepare request body based on whether user has a website or not
       const requestBody = {
+        first_name: formData.first_name,
         email: formData.email,
         password: formData.password,
       };
@@ -276,6 +282,7 @@ function SignUp() {
             <div className="space-y-4">
               {(
                 <>
+                  {renderInputField('first_name', 'First Name', 'text', true, 'Enter your first name')}
                   {renderInputField('email', 'Email', 'email', true, 'Enter your email address')}
                   {renderPasswordField('password', 'Password', true)}
                   

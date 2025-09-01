@@ -38,8 +38,8 @@ const UserMenu = ({ user, isLoading, isCollapsed }) => {
   // Use props data or fallback to localStorage for backward compatibility
   const userEmail = user?.email || '';
   const userInitials = user?.initials || '';
-  const displayName = user?.display_name || '';
-  const capitalisedDisplayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+  const firstName = user?.first_name || '';
+  const capitalisedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
   return (
     <div className="flex items-center">
@@ -82,7 +82,7 @@ const UserMenu = ({ user, isLoading, isCollapsed }) => {
             {isLoading ? (
               <div className="h-5 bg-gray-300 rounded animate-pulse" style={{ width: '100px' }}></div>
             ) : (
-              capitalisedDisplayName
+              capitalisedFirstName
             )}
           </div>
         )}

@@ -38,7 +38,7 @@ const Guide = () => {
         </button>
         {openSections.welcome && (
           <div className="p-4 space-y-3">
-            <p className="text-base">Hey {userData?.display_name},</p>
+            <p className="text-base">Hey {userData?.first_name},</p>
             <p className="text-base">You are one of the very first people to ever use Cassius! We are so excited for you to use v1, and can't wait to see how much it helps with your marketing.</p>
             <p className="text-base">We built this product because we spent years in early-stage businesses, doing every kind of marketing and distribution. It's manual, repetitive, time-consuming, and rarely fun (often, actually very painful).</p>
             <p className="text-base">Most startups fail at distribution because they don't have the time, skill, or resources to execute marketing at the quality and scale required to win. </p>
