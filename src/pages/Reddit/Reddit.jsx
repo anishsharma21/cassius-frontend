@@ -290,11 +290,14 @@ const PostsTabContent = () => {
             </div>
           ) : posts.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button 
+                onClick={() => setShowForm(!showForm)}
+                className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer group"
+              >
+                <svg className="w-8 h-8 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                 </svg>
-              </div>
+              </button>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No posts yet</h3>
               <p className="text-gray-500">Generate your first Reddit post to get started.</p>
             </div>
