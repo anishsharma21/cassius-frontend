@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePostHog } from 'posthog-js/react';
+import { jwtDecode } from 'jwt-decode';
 import API_ENDPOINTS from '../config/api';
 import cassiusLogo from '../assets/cassius.png';
 import { resetRedirectFlag } from '../utils/auth';
@@ -18,6 +20,7 @@ function Login() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const posthog = usePostHog();
 
   // Token expiration state from ProtectedRoute
   useEffect(() => {
@@ -67,6 +70,19 @@ function Login() {
 
       // Store only the access token in localStorage
       localStorage.setItem('access_token', data.access_token);
+
+      // Identify user in PostHog with user ID from JWT token
+      try {
+        const decodedToken = jwtDecode(data.access_token);
+        const userEmail = decodedToken.sub;
+        
+        // Identify user in PostHog with email as the distinct ID
+        posthog?.identify(userEmail, {
+          email: userEmail,
+        });
+      } catch (error) {
+        console.warn('Failed to identify user in PostHog:', error);
+      }
 
       // Reset redirect flag after successful login
       resetRedirectFlag();
