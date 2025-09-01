@@ -1,4 +1,5 @@
 import { jwtDecode } from "jwt-decode";
+import posthog from 'posthog-js';
 
 // Global flag to prevent multiple redirects
 let isRedirecting = false;
@@ -6,6 +7,13 @@ let isRedirecting = false;
 export function logout() {
   // Clear only the access token from localStorage
   localStorage.removeItem('access_token');
+  
+  // Reset PostHog user identification
+  try {
+    posthog.reset();
+  } catch (error) {
+    console.warn('Failed to reset PostHog:', error);
+  }
   
   // Clear React Query cache if queryClient is available
   if (typeof window !== 'undefined' && window.queryClient) {
@@ -30,6 +38,13 @@ export function handleUnauthorizedResponse(queryClient) {
   // Clear access token
   localStorage.removeItem('access_token');
   
+  // Reset PostHog user identification
+  try {
+    posthog.reset();
+  } catch (error) {
+    console.warn('Failed to reset PostHog:', error);
+  }
+  
   // Clear React Query cache
   if (queryClient) {
     queryClient.clear();
@@ -52,6 +67,13 @@ export async function authFetch(url, options = {}) {
         
         // Clear auth data
         localStorage.removeItem('access_token');
+        
+        // Reset PostHog user identification
+        try {
+          posthog.reset();
+        } catch (error) {
+          console.warn('Failed to reset PostHog:', error);
+        }
         
         // Redirect to login
         window.location.href = '/login';
@@ -85,7 +107,7 @@ export function getAuthStatus() {
     const expired = Date.now() >= exp * 1000;
 
     if (expired) {
-      logout(); // clear storage and React Query cache
+      logout(); // clear storage, PostHog, and React Query cache
     }
     console.log('getAuthStatus: isAuthenticated', !expired);
     console.log('getAuthStatus: tokenExpired', expired);
