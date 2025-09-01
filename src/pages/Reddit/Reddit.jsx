@@ -291,7 +291,7 @@ const PostsTabContent = () => {
           ) : posts.length === 0 ? (
             <div className="p-8 text-center">
               <button 
-                onClick={() => setShowForm(!showForm)}
+                onClick={() => setShowForm(true)}
                 className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer group"
               >
                 <svg className="w-8 h-8 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
