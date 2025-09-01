@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { usePostHog } from 'posthog-js/react';
+import QuickActions from '../components/QuickActions';
 import ChatInterface from '../components/ChatInterface';
 import useChatConversation from '../hooks/useChatConversation';
 import useChatAPI from '../hooks/useChatAPI';
@@ -16,36 +17,33 @@ const quickAccessLinks = [
 ];
 
 const comingSoonLinks = [
-  { name: 'Lead Warming Agent', description: 'Nurture potential customers' },
-  { name: 'DM\'ing Agent', description: 'Automate direct messaging' },
+  { name: 'Social Media DM\'ing Agent', description: 'Automate direct messaging' },
   { name: 'Sentiment Analysis', description: 'Monitor brand perception' },
   { name: 'SEO Auditor', description: 'Analyze website performance' },
   { name: 'Publication Outreach Agent', description: 'Connect with media outlets' },
-  { name: 'GEO Hub', description: 'Geographic targeting tools' },
+  { name: 'GEO Hub', description: ' LLM Ranking Optimisation' },
+  { name: 'Competition Marketing Analysis', description: 'Analyze competitors\' strategies' },
   { name: 'Online Forum Seeding', description: 'Strategic forum engagement' },
   { name: 'Voice Training', description: 'Train your brand voice' },
-  { name: 'More Partnerships', description: 'Expand partnership network' }
+  { name: 'Partnership Outreach & Analytics', description: 'Close influencer deals' }
 ];
 
 function Strategy() {
   const {
     conversation,
     createUserMessage,
-    createAIMessage,
-    clearConversation
+    createAIMessage
   } = useChatConversation();
 
   const {
-    generateAIResponse,
-    resetStreamingState
+    generateAIResponse
   } = useChatAPI();
 
-  // Initialize showConversation based on existing conversation
-  const [showConversation, setShowConversation] = useState(conversation.length > 0);
+  // Initialize based on conversation state - no animation on mount
+  const [showCentralChat, setShowCentralChat] = useState(conversation.length === 0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [thumbsUpFeatures, setThumbsUpFeatures] = useState(new Set());
   const [showComingSoon, setShowComingSoon] = useState(false);
-  
   const posthog = usePostHog();
 
   // Handle thumbs up for coming soon features
@@ -56,14 +54,12 @@ function Strategy() {
       
       if (isCurrentlyLiked) {
         newSet.delete(featureName);
-        // Track thumbs down event
         posthog?.capture('coming_soon_feature_thumbs_down', {
           feature_name: featureName,
           action: 'remove_vote'
         });
       } else {
         newSet.add(featureName);
-        // Track thumbs up event
         posthog?.capture('coming_soon_feature_thumbs_up', {
           feature_name: featureName,
           action: 'add_vote'
@@ -73,83 +69,93 @@ function Strategy() {
     });
   }, [posthog]);
 
-  // Handle chat submission
-  const handleChatSubmit = useCallback(async (prompt) => {
+  // Track if this is the initial mount
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Initialize after mount to prevent flash
+  useEffect(() => {
+    setHasInitialized(true);
+  }, []);
+
+  // Monitor conversation changes (but not on initial mount)
+  useEffect(() => {
+    if (!hasInitialized) return;
+
+    if (conversation.length > 0 && showCentralChat) {
+      // Transition to side view when first message is sent
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setShowCentralChat(false);
+        setIsTransitioning(false);
+      }, 300);
+    } else if (conversation.length === 0 && !showCentralChat) {
+      // When conversation is cleared, transition back to central view
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setShowCentralChat(true);
+        setIsTransitioning(false);
+      }, 300);
+    }
+  }, [conversation.length, showCentralChat, hasInitialized]);
+
+  // Handle chat submission from central view
+  const handleCentralChatSubmit = useCallback(async (prompt) => {
     // Create user message
     createUserMessage(prompt);
     
     // Create AI message placeholder
     const aiMessageId = createAIMessage();
     
-    // Show conversation with transition animation if it's the first message
-    if (conversation.length === 0) {
-      setIsTransitioning(true);
-      // Quick transition to feel responsive
-      setTimeout(() => {
-        setShowConversation(true);
-        setIsTransitioning(false);
-      }, 200);
-    }
+    // Start transition to hide central chat
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setShowCentralChat(false);
+      setIsTransitioning(false);
+    }, 300);
     
     // Generate AI response
     await generateAIResponse(prompt, aiMessageId);
-  }, [createUserMessage, createAIMessage, generateAIResponse, conversation.length]);
-
-  // Handle clearing conversation
-  const handleClearConversation = useCallback(() => {
-    setIsTransitioning(true);
-    clearConversation();
-    resetStreamingState();
-    // Quick transition back to landing view
-    setTimeout(() => {
-      setShowConversation(false);
-      setIsTransitioning(false);
-    }, 200);
-  }, [clearConversation, resetStreamingState]);
-
-  // Handle external conversation updates (e.g., from Reddit hub)
-  useEffect(() => {
-    if (conversation.length > 0 && !showConversation) {
-      // If conversation gets populated externally while showing landing view, switch immediately
-      setShowConversation(true);
-    }
-  }, [conversation.length, showConversation]);
+  }, [createUserMessage, createAIMessage, generateAIResponse]);
 
   return (
-    <div className="h-full flex flex-col relative">
-      {/* Landing page view */}
-      <div className={`absolute inset-0 flex flex-col strategy-transition overflow-y-auto ${
-        showConversation ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
-      } ${isTransitioning ? 'pointer-events-none' : ''}`}>
-        {/* Spacer to push chat section down */}
-        <div className="min-h-[10vh]"></div>
-          
-          {/* Centered Chat Section */}
-          <div className="flex flex-col items-center justify-center px-8 py-8">
-            {/* Logo and Title */}
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-6">
-                <img src={cassiusLogo} alt="Cassius" className="w-16 h-16" />
+    <div className="h-full overflow-y-auto">
+      {/* Always show the header and quick actions, no transition */}
+      <div className="px-8">
+        {/* Logo and Title - Always visible when in central view */}
+        {showCentralChat && (
+          <>
+            {/* Spacer */}
+            <div className="min-h-[10vh]"></div>
+            
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="text-center mb-8">
+                <div className="flex justify-center mb-6">
+                  <img src={cassiusLogo} alt="Cassius" className="w-16 h-16" />
+                </div>
+                <h1 className="text-4xl font-bold text-black mb-2">Cassius Intelligence</h1>
+                <p className="text-xl text-gray-600 mb-2">Your AI Marketing Copilot</p>
+                <p className="text-base text-gray-500">Ask me anything about your marketing strategy</p>
               </div>
-              <h1 className="text-4xl font-bold text-black mb-2">Cassius Intelligence</h1>
-              <p className="text-xl text-gray-600 mb-2">Your AI Marketing Copilot</p>
-              <p className="text-base text-gray-500">Ask me anything about your marketing strategy</p>
-            </div>
 
-            {/* Central Chat Interface */}
-            <div className="w-full max-w-2xl">
-              <ChatInterface
-                conversation={[]}
-                onSubmit={handleChatSubmit}
-                placeholder="Ask Cassius anything..."
-                className="border-2 border-gray-200 rounded-2xl shadow-lg bg-white"
-                fixedBottomInput={false}
-              />
+              {/* Central Chat Interface - Only this animates */}
+              <div className={`w-full max-w-2xl strategy-transition ${
+                isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+              }`}>
+                <ChatInterface
+                  conversation={[]}
+                  onSubmit={handleCentralChatSubmit}
+                  placeholder="Ask Cassius anything..."
+                  className="border-2 border-gray-200 rounded-2xl shadow-lg bg-white"
+                  fixedBottomInput={false}
+                />
+              </div>
             </div>
-          </div>
+          </>
+        )}
 
-          {/* Quick Access Links */}
-          <div className="px-8 py-12">
+        {/* Quick Actions - Always visible when in central view */}
+        {showCentralChat ? (
+          <div className="py-12">
             <div className="w-full max-w-6xl mx-auto space-y-8">
               
               {/* Guide Card - Own Row */}
@@ -211,7 +217,7 @@ function Strategy() {
                 
                 {showComingSoon && (
                   <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
-                    <div className="p-4">
+                    <div className="p-4 pb-8">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {comingSoonLinks.map(({ name, description }) => (
                           <div
@@ -253,62 +259,14 @@ function Strategy() {
                 )}
               </div>
             </div>
+            
+            {/* Bottom spacing - only when dropdown is open */}
+            {showComingSoon && <div className="min-h-[20vh] py-12"></div>}
           </div>
-          
-          {/* Bottom spacing - only when dropdown is open */}
-          {showComingSoon && <div className="min-h-[10vh] py-8"></div>}
-        </div>
-      
-      {/* Full conversation view */}
-      <div className={`absolute inset-0 flex flex-col strategy-transition ${
-        showConversation ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-      } ${isTransitioning ? 'pointer-events-none' : ''}`}>
-        {/* Header with back button */}
-        <div className="p-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  setIsTransitioning(true);
-                  setTimeout(() => {
-                    setShowConversation(false);
-                    setIsTransitioning(false);
-                  }, 200);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <div className="flex items-center gap-3">
-                <img src={cassiusLogo} alt="Cassius" className="w-8 h-8" />
-                <h2 className="text-lg font-semibold text-black">Cassius Intelligence</h2>
-              </div>
-            </div>
-            <button
-              onClick={handleClearConversation}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Clear conversation"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
-                <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Chat Interface */}
-        <div className="flex-1 bg-gray-50 overflow-hidden">
-          <ChatInterface
-            conversation={conversation}
-            onSubmit={handleChatSubmit}
-            placeholder="Ask Cassius anything..."
-            className="h-full"
-            fixedBottomInput={true}
-            inputHeight="h-20"
-          />
-        </div>
+        ) : (
+          // Show QuickActions component when side chat is active
+          <QuickActions />
+        )}
       </div>
     </div>
   );

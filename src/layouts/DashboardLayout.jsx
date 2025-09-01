@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import SideChat from '../components/SideChat';
+import useChatConversation from '../hooks/useChatConversation';
 
 
 
@@ -11,9 +12,12 @@ const DashboardLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { conversation } = useChatConversation();
   
-  // Check if we're on the Strategy page to hide side chat
+  // Check if we're on Strategy page and if it should show central chat
   const isStrategyPage = location.pathname === '/dashboard/strategy';
+  const showCentralStrategyView = isStrategyPage && conversation.length === 0;
+  const shouldHideSideChat = showCentralStrategyView;
   
   // Check if user is new and redirect to guide
   useEffect(() => {
@@ -27,10 +31,10 @@ const DashboardLayout = () => {
 
   // Automatically collapse sidebar when on Strategy page
   useEffect(() => {
-    if (isStrategyPage) {
+    if (location.pathname === '/dashboard/strategy') {
       setIsSidebarCollapsed(true);
     }
-  }, [isStrategyPage]);
+  }, [location.pathname]);
 
   const handleMouseDown = (e) => {
     setIsDragging(true);
@@ -79,15 +83,15 @@ const DashboardLayout = () => {
           {/* Main Page - Floating white section */}
           <div 
             className="-ml-2 px-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col"
-            style={{ width: isStrategyPage ? '100%' : `${100 - chatWidth}%` }}
+            style={{ width: shouldHideSideChat ? '100%' : `${100 - chatWidth}%` }}
           >
             <div className="flex-1 overflow-y-auto">
               <Outlet />
             </div>
           </div>
           
-          {/* Draggable Divider - Only show if not Strategy page */}
-          {!isStrategyPage && (
+          {/* Draggable Divider - Hide when showing central Strategy view */}
+          {!shouldHideSideChat && (
             <div
               className="w-2 bg-gray-100 cursor-col-resize transition-colors relative"
               onMouseDown={handleMouseDown}
@@ -96,8 +100,8 @@ const DashboardLayout = () => {
             </div>
           )}
           
-          {/* Chat Page - Floating white section - Only show if not Strategy page */}
-          {!isStrategyPage && (
+          {/* Chat Page - Floating white section - Hide when showing central Strategy view */}
+          {!shouldHideSideChat && (
             <div 
               className="bg-white rounded-xl shadow-sm overflow-hidden"
               style={{ width: `${chatWidth}%` }}
