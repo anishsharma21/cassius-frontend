@@ -255,8 +255,8 @@ function Strategy() {
             </div>
           </div>
           
-          {/* Bottom spacing */}
-          <div className="h-16"></div>
+          {/* Bottom spacing - only when dropdown is open */}
+          {showComingSoon && <div className="min-h-[10vh] py-8"></div>}
         </div>
       
       {/* Full conversation view */}
