@@ -9,7 +9,7 @@ const Guide = () => {
     <div className="p-6">
       <p className="text-3xl font-bold mb-1">Welcome to the Cassius beta!</p>
       <br></br>
-      <p className="text-base mb-2">Hey {userData?.display_name},</p>
+      <p className="text-base mb-2">Hey {userData?.first_name},</p>
       <p className="text-base">You are one of the very first people to ever use Cassius - thank you so much.</p>
       <p className="text-base">We built this product because we felt the same pain every early team feels: building is easier than ever, but getting customers still feels messy and overwhelming. </p>
       <p className="text-base">Our hope is that Cassius makes growth feel clearer, faster, and much more enjoyable.</p>
