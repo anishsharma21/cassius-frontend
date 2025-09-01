@@ -549,6 +549,7 @@ function Reddit() {
   const [localTotalCount, setLocalTotalCount] = useState(0);
   const [localRepliedCount, setLocalRepliedCount] = useState(0);
   const [activeTab, setActiveTab] = useState('leads'); // New state for tab management
+  const [showInfoModal, setShowInfoModal] = useState(false); // New state for info modal
 
   // Fetch Reddit posts using React Query
   const { data: redditData, isLoading, error } = useRedditPosts(currentPage);
@@ -568,6 +569,20 @@ function Reddit() {
       setLocalRepliedCount(redditData.replied_count || 0);
     }
   }, [redditData]);
+
+  // ESC key handler for info modal
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && showInfoModal) {
+        setShowInfoModal(false);
+      }
+    };
+
+    if (showInfoModal) {
+      document.addEventListener('keydown', handleEscapeKey);
+      return () => document.removeEventListener('keydown', handleEscapeKey);
+    }
+  }, [showInfoModal]);
 
   // Reset current page if it's greater than total pages
   useEffect(() => {
@@ -746,7 +761,7 @@ function Reddit() {
 
       {/* Tab Navigation */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 flex justify-between items-center">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('leads')}
@@ -775,6 +790,20 @@ function Reddit() {
               </span>
             </button>
           </nav>
+          
+          {/* Help button on the same level as tabs */}
+          {activeTab === 'leads' && (
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer transition-colors mb-px"
+              title="Learn about Reddit engagement strategy"
+            >
+              <span className="text-sm">How to use</span>
+              <div className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                <span className="text-xs font-bold">?</span>
+              </div>
+            </button>
+          )}
         </div>
       </div>
 
@@ -793,6 +822,123 @@ function Reddit() {
 
       {activeTab === 'posts' && (
         <PostsTabContent />
+      )}
+
+      {/* Info Modal */}
+      {showInfoModal && (
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{backgroundColor: 'rgba(0, 0, 0, 0.75)'}} onClick={() => setShowInfoModal(false)}>
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Reddit Engagement Strategy</h3>
+              <button 
+                onClick={() => setShowInfoModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 prose prose-blue max-w-none">
+              <p className="text-gray-700 leading-relaxed mb-4">
+                Reddit is one of the most powerful places to seed trust and discovery for your business. When you reply to leads here, even if the thread isn't directly about your product, you build authority by adding value and dropping a natural mention of what you're building.
+              </p>
+              
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Why this matters:</h4>
+              <ul className="space-y-2 mb-6">
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>Longevity:</strong> People search Reddit threads years later, and your reply will still be there.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>LLMs scrape Reddit:</strong> Replies today can surface in AI-generated answers tomorrow, giving your company free visibility.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span><strong>Authority and trust:</strong> Reddit is a source people actually believe. Many purchase decisions are made within seconds of seeing a trusted Reddit reply.</span>
+                </li>
+              </ul>
+              
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Tips for usage:</h4>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span>Reply to as many leads as you see fit, but pace yourself so your account doesn't look like spam.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <div>
+                    <span className="font-medium">All leads are relevant, regardless of how old/recent they are!</span> This is because:
+                    <ul className="mt-2 ml-4 space-y-1">
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>Older threads can still rank highly on Google, meaning your reply will be seen by new visitors every day.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>Many Reddit communities keep reviving old threads when new comments are added, pushing your reply back into visibility.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>Even if the OP has moved on, future readers discovering the thread will still see your brand or product mentioned.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>A strong reply in an older thread can build credibility and trust without the noise of a brand-new, crowded post.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span>Cassius surfaces these leads because they are contextually relevant, not just recent: quality of match matters more than date.</span>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span>You can always edit or refine replies by talking to Cassius Intelligence.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <div>
+                    <span className="font-medium">Soon, we'll add extra tools like:</span>
+                    <ul className="mt-2 ml-4 space-y-1">
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>A warm-up agent that comments on random posts tailored to your interests (to diversify your profile and build karma).</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>A DM agent for deeper engagement.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>A scanning agent that gives sentiment analysis across Reddit.</span>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+              </ul>
+              
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                <p className="text-blue-800 font-medium">
+                  This is just the start. Ultimately, Cassius will help you expand into other online communities like Facebook groups and industry-specific forums.
+                </p>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

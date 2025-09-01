@@ -11,7 +11,15 @@ const CompanyProfile = () => {
     const queryClient = useQueryClient();
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [formData, setFormData] = useState({
+        name: '',
+        coreBusiness: '',
+        businessGoals: '',
+        targetMarket: '',
+        websiteUrl: ''
+    });
+    const [originalFormData, setOriginalFormData] = useState({
         name: '',
         coreBusiness: '',
         businessGoals: '',
@@ -104,13 +112,16 @@ const CompanyProfile = () => {
     useEffect(() => {
         if (company) {
             const parsedDescription = parseStructuredDescription(company.description);
-            setFormData({
+            const newFormData = {
                 name: company.name || '',
                 coreBusiness: parsedDescription.coreBusiness || '',
                 businessGoals: parsedDescription.businessGoals || '',
                 targetMarket: company.target_market || '',
                 websiteUrl: company.website_url || ''
-            });
+            };
+            setFormData(newFormData);
+            setOriginalFormData(newFormData);
+            setHasUnsavedChanges(false);
         }
     }, [company]);
     
@@ -138,30 +149,23 @@ const CompanyProfile = () => {
     
     
     const handleInputChange = (field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
+        const newFormData = { ...formData, [field]: value };
+        setFormData(newFormData);
+        
+        // Check if there are unsaved changes by comparing with original data
+        const hasChanges = JSON.stringify(newFormData) !== JSON.stringify(originalFormData);
+        setHasUnsavedChanges(hasChanges);
     };
     
-    const handleKeyDown = (e, field) => {
-        if (e.key === 'Escape') {
-            e.target.blur(); // This will trigger onBlur which calls handleSave
-        }
-    };
-    
-    const handleSave = async (field, value) => {
+    const handleSave = async () => {
         setIsSaving(true);
         
         try {
-            // Update the form data first
-            const updatedFormData = { ...formData, [field]: value };
-            
             // Build structured description from form fields
             const structuredDescription = [
                 'BUSINESS PROFILE:',
-                updatedFormData.coreBusiness && `Core Business: ${updatedFormData.coreBusiness}`,
-                updatedFormData.businessGoals && `Business Goals: ${updatedFormData.businessGoals}`
+                formData.coreBusiness && `Core Business: ${formData.coreBusiness}`,
+                formData.businessGoals && `Business Goals: ${formData.businessGoals}`
             ].filter(Boolean).join('\n');
             
             const token = localStorage.getItem('access_token');
@@ -176,16 +180,20 @@ const CompanyProfile = () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    name: updatedFormData.name,
+                    name: formData.name,
                     description: structuredDescription,
-                    target_market: updatedFormData.targetMarket,
-                    website_url: updatedFormData.websiteUrl
+                    target_market: formData.targetMarket,
+                    website_url: formData.websiteUrl
                 })
             });
             
             if (!response.ok) {
                 throw new Error('Failed to update company profile');
             }
+            
+            // Update original data and clear unsaved changes flag
+            setOriginalFormData({ ...formData });
+            setHasUnsavedChanges(false);
             
             // Invalidate and refetch company data
             await queryClient.invalidateQueries(['company']);
@@ -410,6 +418,25 @@ const CompanyProfile = () => {
             
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-semibold">Company Details</h2>
+                {hasUnsavedChanges && (
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {isSaving ? (
+                            <>
+                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                Saving...
+                            </>
+                        ) : (
+                            'Save Changes'
+                        )}
+                    </button>
+                )}
             </div>
             
             <div style={{ maxWidth: '800px', marginLeft: '1rem', marginRight: '1rem' }}>
@@ -420,8 +447,6 @@ const CompanyProfile = () => {
                             type="text"
                             value={formData.name}
                             onChange={(e) => handleInputChange('name', e.target.value)}
-                            onBlur={(e) => handleSave('name', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'name')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Your company name"
                             disabled={isSaving}
@@ -434,8 +459,6 @@ const CompanyProfile = () => {
                             type="url"
                             value={formData.websiteUrl}
                             onChange={(e) => handleInputChange('websiteUrl', e.target.value)}
-                            onBlur={(e) => handleSave('websiteUrl', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'websiteUrl')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="https://yourcompany.com"
                             disabled={isSaving}
@@ -447,8 +470,6 @@ const CompanyProfile = () => {
                         <textarea
                             value={formData.coreBusiness}
                             onChange={(e) => handleInputChange('coreBusiness', e.target.value)}
-                            onBlur={(e) => handleSave('coreBusiness', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'coreBusiness')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             rows="3"
                             placeholder="What does your company do? Describe your core business activities"
@@ -462,8 +483,6 @@ const CompanyProfile = () => {
                             type="text"
                             value={formData.targetMarket}
                             onChange={(e) => handleInputChange('targetMarket', e.target.value)}
-                            onBlur={(e) => handleSave('targetMarket', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'targetMarket')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Who is your ideal customer?"
                             disabled={isSaving}
@@ -475,24 +494,12 @@ const CompanyProfile = () => {
                         <textarea
                             value={formData.businessGoals}
                             onChange={(e) => handleInputChange('businessGoals', e.target.value)}
-                            onBlur={(e) => handleSave('businessGoals', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'businessGoals')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             rows="2"
                             placeholder="What are your primary business objectives?"
                             disabled={isSaving}
                         />
                     </div>
-                    
-                    {isSaving && (
-                        <div className="flex items-center text-blue-600">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                            </svg>
-                            Saving...
-                        </div>
-                    )}
                 </div>
             </div>
 
