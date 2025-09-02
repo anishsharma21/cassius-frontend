@@ -1,4 +1,5 @@
 import React from 'react';
+import { usePostHog } from 'posthog-js/react';
 
 const DeletePopup = ({ 
   isOpen, 
@@ -9,9 +10,29 @@ const DeletePopup = ({
   confirmText = "Delete",
   cancelText = "Cancel",
   isLoading = false,
-  loadingText = "Deleting..."
+  loadingText = "Deleting...",
+  itemType = "item" // New prop to track what type of item is being deleted
 }) => {
+  const posthog = usePostHog();
+
   if (!isOpen) return null;
+
+  const handleCancel = () => {
+    posthog?.capture('delete_popup_cancelled', {
+      item_type: itemType,
+      action: 'cancel_delete'
+    });
+    onClose();
+  };
+
+  const handleConfirm = () => {
+    posthog?.capture('delete_popup_confirmed', {
+      item_type: itemType,
+      action: 'confirm_delete'
+    });
+    console.log('DeletePopup confirm button clicked');
+    onConfirm();
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-500/20 flex items-center justify-center z-50">
@@ -22,17 +43,14 @@ const DeletePopup = ({
         </div>
         <div className="flex justify-end space-x-3">
           <button
-            onClick={onClose}
+            onClick={handleCancel}
             className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 cursor-pointer"
             disabled={isLoading}
           >
             {cancelText}
           </button>
           <button
-            onClick={() => {
-              console.log('DeletePopup confirm button clicked');
-              onConfirm();
-            }}
+            onClick={handleConfirm}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer disabled:opacity-50 disabled:cursor-default flex items-center gap-2"
             disabled={isLoading}
           >

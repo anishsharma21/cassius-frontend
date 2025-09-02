@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePostHog } from 'posthog-js/react';
 import { useAuthActions } from '../hooks/useAuth';
 
 const UserMenu = ({ user, isLoading, isCollapsed }) => {
@@ -8,6 +9,7 @@ const UserMenu = ({ user, isLoading, isCollapsed }) => {
   const iconRef = useRef(null);
   const navigate = useNavigate();
   const { logout } = useAuthActions();
+  const posthog = usePostHog();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -31,8 +33,24 @@ const UserMenu = ({ user, isLoading, isCollapsed }) => {
   }, [popupOpen]);
 
   const handleLogout = () => {
+    posthog?.capture('user_logout', {
+      user_email: user?.email,
+      action: 'logout_clicked'
+    });
     logout();
     navigate('/');
+  };
+
+  const handleMenuToggle = () => {
+    const newPopupState = !popupOpen;
+    setPopupOpen(newPopupState);
+    
+    if (newPopupState) {
+      posthog?.capture('user_menu_opened', {
+        user_email: user?.email,
+        action: 'menu_opened'
+      });
+    }
   };
 
   // Use props data or fallback to localStorage for backward compatibility
@@ -46,7 +64,7 @@ const UserMenu = ({ user, isLoading, isCollapsed }) => {
       <div className="icon-container flex-shrink-0">
         <button
           ref={iconRef}
-          onClick={() => setPopupOpen((prev) => !prev)}
+          onClick={handleMenuToggle}
           className={`w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-medium text-base flex items-center justify-center cursor-pointer ${
             popupOpen ? 'bg-blue-600' : ''
           }`}

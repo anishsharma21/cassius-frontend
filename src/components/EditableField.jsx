@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePostHog } from 'posthog-js/react';
 
 const EditableField = ({ 
     fieldName, 
@@ -14,6 +15,7 @@ const EditableField = ({
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [validationError, setValidationError] = useState('');
+    const posthog = usePostHog();
     
     const getPlaceholderText = (field) => {
         switch (field) {
@@ -59,16 +61,55 @@ const EditableField = ({
             return;
         }
 
+        posthog?.capture('editable_field_update_started', {
+            field_name: fieldName,
+            field_type: fieldType,
+            has_value: !!value,
+            action: 'field_update_attempt'
+        });
+
         try {
             setIsSubmitting(true);
             await onUpdate(fieldName);
+            
+            posthog?.capture('editable_field_update_success', {
+                field_name: fieldName,
+                field_type: fieldType,
+                action: 'field_updated'
+            });
+            
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 2000); // Hide success message after 2 seconds
         } catch (error) {
+            posthog?.capture('editable_field_update_failed', {
+                field_name: fieldName,
+                field_type: fieldType,
+                error: error?.message,
+                action: 'field_update_error'
+            });
             // Error is handled by the hook
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleEditClick = () => {
+        posthog?.capture('editable_field_edit_started', {
+            field_name: fieldName,
+            field_type: fieldType,
+            has_value: !!value,
+            action: 'edit_mode_entered'
+        });
+        onEdit(fieldName);
+    };
+
+    const handleCancelClick = () => {
+        posthog?.capture('editable_field_edit_cancelled', {
+            field_name: fieldName,
+            field_type: fieldType,
+            action: 'edit_mode_cancelled'
+        });
+        onCancel();
     };
     const renderEditButtons = () => (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -82,7 +123,7 @@ const EditableField = ({
                 strokeLinecap="round" 
                 strokeLinejoin="round"
                 style={{ cursor: 'pointer', color: '#ef4444' }}
-                onClick={onCancel}
+                onClick={handleCancelClick}
             >
                 <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
@@ -138,7 +179,7 @@ const EditableField = ({
                 strokeLinecap="round" 
                 strokeLinejoin="round"
                 style={{ cursor: 'pointer', color: '#6b7280' }}
-                onClick={() => onEdit(fieldName)}
+                onClick={handleEditClick}
             >
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>

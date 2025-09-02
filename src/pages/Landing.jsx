@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { usePostHog } from 'posthog-js/react';
 
 import LandingPromptBox from '../components/LandingPromptBox';
 import Footer from '../components/Footer';
@@ -9,6 +10,7 @@ import API_ENDPOINTS from '../config/api';
 function Landing() {
   
   const navigate = useNavigate();
+  const posthog = usePostHog();
   const [promptInput, setPromptInput] = useState('');
   const [showFeaturesDropdown, setShowFeaturesDropdown] = useState(false);
   const [scrapedData, setScrapedData] = useState(null);
@@ -27,6 +29,10 @@ function Landing() {
     
     if (!promptInput.trim()) {
       setError('Please enter a website URL');
+      posthog?.capture('landing_scrape_failed', {
+        error: 'empty_url',
+        action: 'validation_error'
+      });
       return;
     }
 
@@ -38,8 +44,17 @@ function Landing() {
 
     if (!validateUrl(urlToSend)) {
       setError('Please enter a valid website URL');
+      posthog?.capture('landing_scrape_failed', {
+        error: 'invalid_url_format',
+        action: 'validation_error'
+      });
       return;
     }
+
+    posthog?.capture('landing_scrape_started', {
+      url_domain: new URL(urlToSend).hostname,
+      action: 'website_scrape_initiated'
+    });
 
     setIsLoading(true);
     setError(null);
@@ -58,12 +73,31 @@ function Landing() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        
+        posthog?.capture('landing_scrape_failed', {
+          url_domain: new URL(urlToSend).hostname,
+          error: errorData.detail || 'api_error',
+          action: 'scrape_api_error'
+        });
+        
         throw new Error(errorData.detail || 'Failed to scrape website');
       }
 
       const data = await response.json();
+      
+      posthog?.capture('landing_scrape_success', {
+        url_domain: new URL(urlToSend).hostname,
+        action: 'website_scraped'
+      });
+      
       setScrapedData(data);
     } catch (err) {
+      posthog?.capture('landing_scrape_error', {
+        url_domain: urlToSend ? new URL(urlToSend).hostname : 'unknown',
+        error: err.message,
+        action: 'scrape_network_error'
+      });
+      
       setError(err.message || 'An error occurred while scraping the website');
     } finally {
       setIsLoading(false);
@@ -72,15 +106,27 @@ function Landing() {
 
   const handleFeaturesClick = (e) => {
     e.stopPropagation();
+    posthog?.capture('landing_features_dropdown_toggled', {
+      is_opening: !showFeaturesDropdown,
+      action: 'features_dropdown_clicked'
+    });
     setShowFeaturesDropdown(!showFeaturesDropdown);
   };
 
   const handleFeatureNavigation = (route) => {
+    posthog?.capture('landing_feature_navigation', {
+      destination: route,
+      action: 'feature_clicked'
+    });
     setShowFeaturesDropdown(false);
     navigate(route);
   };
 
   const handleNavigation = (route) => {
+    posthog?.capture('landing_navigation', {
+      destination: route,
+      action: 'navigation_clicked'
+    });
     navigate(route);
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import ReactMarkdown from 'react-markdown';
 
 const ChatInterface = ({ 
@@ -16,6 +17,7 @@ const ChatInterface = ({
   const [prompt, setPrompt] = useState('');
   const [showClearTooltip, setShowClearTooltip] = useState(false);
   const conversationRef = useRef(null);
+  const posthog = usePostHog();
 
   // Calculate bottom offset for conversation area based on input height
   const getBottomOffset = () => {
@@ -39,8 +41,28 @@ const ChatInterface = ({
     e.preventDefault();
     if (prompt.trim()) {
       const trimmedPrompt = prompt.trim();
+      
+      // Track chat message submission
+      posthog?.capture('chat_message_sent', {
+        message_length: trimmedPrompt.length,
+        chat_context: headerTitle,
+        prompt_preview: trimmedPrompt.substring(0, 50), // First 50 chars for context
+        action: 'message_submitted'
+      });
+      
       setPrompt(''); // Clear immediately
       await onSubmit(trimmedPrompt);
+    }
+  };
+
+  const handleClearChat = () => {
+    posthog?.capture('chat_cleared', {
+      messages_count: conversation.length,
+      chat_context: headerTitle,
+      action: 'clear_chat'
+    });
+    if (onClear) {
+      onClear();
     }
   };
 
@@ -77,7 +99,7 @@ const ChatInterface = ({
                 className="cursor-pointer"
                 onMouseEnter={() => setShowClearTooltip(true)}
                 onMouseLeave={() => setShowClearTooltip(false)}
-                onClick={onClear}
+                onClick={handleClearChat}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/>
@@ -141,11 +163,24 @@ const ChatInterface = ({
                               <div className="mt-3">
                                 <button
                                   onClick={async () => {
+                                    posthog?.capture('chat_copy_go_to_reddit_clicked', {
+                                      reddit_link: message.redditLink,
+                                      content_type: message.contentType,
+                                      content_length: message.content?.length,
+                                      action: 'copy_and_navigate_from_chat'
+                                    });
+                                    
                                     try {
                                       await navigator.clipboard.writeText(message.content);
+                                      posthog?.capture('chat_copy_to_clipboard_success', {
+                                        content_length: message.content?.length
+                                      });
                                       window.open(message.redditLink, '_blank');
                                     } catch (error) {
                                       console.error('Failed to copy to clipboard:', error);
+                                      posthog?.capture('chat_copy_to_clipboard_failed', {
+                                        error: error.message
+                                      });
                                       window.open(message.redditLink, '_blank');
                                     }
                                   }}

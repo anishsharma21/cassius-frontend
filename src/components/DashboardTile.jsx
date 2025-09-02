@@ -1,11 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePostHog } from 'posthog-js/react';
 
 const DashboardTile = ({ title, content, path, icon }) => {
   const navigate = useNavigate();
+  const posthog = usePostHog();
 
   const handleClick = () => {
     if (path) {
+      posthog?.capture('dashboard_tile_clicked', {
+        tile_title: title,
+        destination_path: path,
+        action: 'tile_navigation'
+      });
       navigate(path);
     }
   };

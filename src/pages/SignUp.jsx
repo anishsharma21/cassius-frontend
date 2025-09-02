@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePostHog } from 'posthog-js/react';
 import API_ENDPOINTS from '../config/api';
 import cassiusLogo from '../assets/cassius.png';
 
@@ -30,6 +31,7 @@ function SignUp() {
   });
 
   const navigate = useNavigate();
+  const posthog = usePostHog();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -113,7 +115,18 @@ function SignUp() {
   };
 
   const handleNext = async () => {
-    if (!validateStep1()) return;
+    if (!validateStep1()) {
+      posthog?.capture('signup_validation_failed', {
+        has_website: formData.website_url !== 'No website yet',
+        action: 'validation_error'
+      });
+      return;
+    }
+    
+    posthog?.capture('signup_attempt_started', {
+      has_website: formData.website_url !== 'No website yet',
+      action: 'signup_form_submitted'
+    });
     
     setLoading(true);
     setErrors({});
@@ -146,12 +159,25 @@ function SignUp() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        
+        posthog?.capture('signup_failed', {
+          has_website: formData.website_url !== 'No website yet',
+          error: errorData.detail || 'Unknown error',
+          action: 'signup_api_error'
+        });
+        
         setErrors({ general: errorData.detail || 'Failed to create account' });
         setLoading(false);
         return;
       }
 
       const data = await response.json();
+      
+      posthog?.capture('signup_successful', {
+        has_website: formData.website_url !== 'No website yet',
+        user_email: formData.email,
+        action: 'signup_completed'
+      });
       
       // Store login data from UserLoginResponse
       localStorage.setItem('access_token', data.access_token);
@@ -163,6 +189,12 @@ function SignUp() {
       navigate('/dashboard');
       
     } catch (error) {
+      posthog?.capture('signup_error', {
+        has_website: formData.website_url !== 'No website yet',
+        error: error.message,
+        action: 'signup_network_error'
+      });
+      
       setErrors({ general: error.message || 'Something went wrong' });
     } finally {
       setLoading(false);
@@ -315,6 +347,9 @@ function SignUp() {
                           type="button"
                           className="text-sm text-gray-500 hover:text-gray-800 underline cursor-pointer"
                           onClick={() => {
+                            posthog?.capture('signup_no_website_selected', {
+                              action: 'no_website_button_clicked'
+                            });
                             setFormData(prev => ({ ...prev, website_url: 'No website yet' }));
                             setErrors(prev => ({ ...prev, website_url: '' }));
                           }}
