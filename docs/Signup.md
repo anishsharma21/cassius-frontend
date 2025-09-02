@@ -41,8 +41,12 @@ Users can sign up through two distinct paths:
 
 1. User receives JWT access token
 2. Automatic redirect to `/dashboard`
-3. First-time users flagged with `isNewUser` localStorage flag
-4. Redirected to Guide page for onboarding
+3. **Real-time progress notifications** begin immediately via SSE connection
+4. First-time users flagged with `isNewUser` localStorage flag
+5. Redirected to Guide page for onboarding
+6. **Background task progress** visible throughout via toast notifications
+
+> **✨ New Feature**: The signup flow now includes real-time progress updates via Server-Sent Events (SSE). Users see immediate feedback as background tasks (like Reddit leads generation) progress, eliminating the need for page refreshes. See [SSE Real-Time Updates Documentation](SSE-RealTimeUpdates.md) for complete technical details.
 
 ## Frontend Implementation
 
@@ -219,7 +223,7 @@ async def create_company(payload: CompanyCreateRequest, db: AsyncSession):
 #### Background Task Initialization
 
 ```python
-    # Launch background initialization
+    # Launch background initialization with progress tracking
     asyncio.create_task(
         init_company_resources(
             new_company.id,
@@ -227,9 +231,12 @@ async def create_company(payload: CompanyCreateRequest, db: AsyncSession):
             payload.description,
             payload.target_market,
             new_company.website_url,
+            payload.user_id,  # Pass user_id for progress tracking
         )
     )
 ```
+
+> **Real-time Updates**: Background tasks now include progress tracking that provides real-time feedback to users via SSE. Users see live progress indicators for Reddit leads generation and other initialization tasks.
 
 ## Background Task Orchestration
 
@@ -244,6 +251,7 @@ async def init_company_resources(
     description: str,
     target_market: str,
     website_url: str,
+    user_id: str = None,  # New parameter for progress tracking
 ):
     # Prepare business context
     if not llm_website_summary:
@@ -251,8 +259,22 @@ async def init_company_resources(
     else:
         business_context = llm_website_summary
     
-    # Launch parallel initialization tasks
-    asyncio.create_task(init_reddit(company_id, business_context))
+    # Launch initialization tasks with progress tracking
+    if user_id:
+        # Use tracked version for Reddit leads (provides real-time updates)
+        from src.features.progress.services import progress_tracker
+        reddit_task_id = await progress_tracker.start_task(
+            task_type=TaskType.REDDIT_LEADS,
+            user_id=user_id,
+            total_steps=10,
+            trigger="signup"
+        )
+        asyncio.create_task(init_reddit_tracked(company_id, business_context, reddit_task_id))
+    else:
+        # Fallback to regular version (no progress tracking)
+        asyncio.create_task(init_reddit(company_id, business_context))
+    
+    # Other initialization tasks
     asyncio.create_task(init_geo(company_id, business_context, website_url))
     asyncio.create_task(init_partnerships(business_context, company_id))
     asyncio.create_task(init_subreddits_for_company(company_id, business_context))
@@ -262,11 +284,13 @@ async def init_company_resources(
 
 All initialization tasks run concurrently as background tasks:
 
-1. **Reddit Lead Generation** (`init_reddit`)
+1. **Reddit Lead Generation** (`init_reddit_tracked`) - **✨ With real-time progress updates**
 2. **SEO/GEO Initialization** (`init_geo`)
 3. **Partnership Discovery** (`init_partnerships`)
 4. **Subreddit Discovery** (`init_subreddits_for_company`)
 5. **Context Caching** (`warm_context_for`)
+
+> **Real-time Progress**: During signup, Reddit lead generation provides live progress updates through SSE, showing users exactly what's happening in the background. Users see progress indicators like "Batch 3 of 10" and "Finding leads for query: 'marketing automation software'" in real-time.
 
 ## Service Initialization Details
 

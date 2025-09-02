@@ -4,6 +4,7 @@ import { useUserSubreddits } from '../../hooks/useUserSubreddits';
 import { useGeneratePost } from '../../hooks/useGeneratePost';
 import { useGeneratedPosts } from '../../hooks/useGeneratedPosts';
 import { useUpdatePost } from '../../hooks/useUpdatePost';
+import { useBackgroundTask, TASK_TYPE } from '../../contexts/BackgroundTasksContext';
 import RedditMetrics from './components/RedditMetrics';
 import RedditTableConfig from './components/RedditTableConfig';
 import RedditTableActions from './components/RedditTableActions';
@@ -551,6 +552,9 @@ function Reddit() {
   const [activeTab, setActiveTab] = useState('leads'); // New state for tab management
   const [showInfoModal, setShowInfoModal] = useState(false); // New state for info modal
 
+  // Background task management (keeping for universal progress indicator)
+  useBackgroundTask(TASK_TYPE.REDDIT_LEADS);
+
   // Fetch Reddit posts using React Query
   const { data: redditData, isLoading, error } = useRedditPosts(currentPage);
   
@@ -596,6 +600,7 @@ function Reddit() {
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
+
 
   const handlePostReplyUpdate = (postId, newStatus) => {
     setLocalReplyStates(prev => ({
@@ -791,18 +796,20 @@ function Reddit() {
             </button>
           </nav>
           
-          {/* Help button on the same level as tabs */}
+          {/* Action buttons on the same level as tabs */}
           {activeTab === 'leads' && (
-            <button
-              onClick={() => setShowInfoModal(true)}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer transition-colors mb-px"
-              title="Learn about Reddit engagement strategy"
-            >
-              <span className="text-sm">How to use</span>
-              <div className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
-                <span className="text-xs font-bold">?</span>
-              </div>
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowInfoModal(true)}
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 cursor-pointer transition-colors mb-px"
+                title="Learn about Reddit engagement strategy"
+              >
+                <span className="text-sm">How to use</span>
+                <div className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                  <span className="text-xs font-bold">?</span>
+                </div>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -940,6 +947,7 @@ function Reddit() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
