@@ -9,24 +9,29 @@ The Reddit Leads feature automatically discovers and surfaces potential customer
 ### How It Works for Users
 
 1. **Automatic Discovery**: Leads are automatically discovered when a company is created
+   - **✨ Real-time Updates**: Users see live progress during signup via toast notifications
 2. **Navigate to Reddit Hub**: Go to Reddit Hub → Leads tab to view discovered leads
 3. **Browse Leads**: View paginated list of Reddit posts identified as potential leads
-4. **View Details**: Expand posts to see associated comments
-5. **Generate Replies**: Click "Reply" to generate AI-powered responses
-6. **Edit & Customize**: Modify generated replies to match your voice
-7. **Copy & Engage**: Copy the reply and go directly to Reddit
-8. **Track Progress**: Mark leads as "replied to" for engagement tracking
-9. **Monitor Metrics**: View total leads and reply progress in real-time
+4. **Manual Discovery**: Click "Find More Leads" button for additional lead generation
+   - **✨ Live Progress**: Real-time progress indicators show batch completion status
+5. **View Details**: Expand posts to see associated comments
+6. **Generate Replies**: Click "Reply" to generate AI-powered responses
+7. **Edit & Customize**: Modify generated replies to match your voice
+8. **Copy & Engage**: Copy the reply and go directly to Reddit
+9. **Track Progress**: Mark leads as "replied to" for engagement tracking
+10. **Monitor Metrics**: View total leads and reply progress in real-time
 
 ### Key User Benefits
 
 - **Automated Discovery**: No manual searching - leads are found automatically
+- **✨ Real-time Progress**: Live updates during lead generation - no page refreshes needed
 - **Pre-filtered Quality**: AI filters ensure only relevant leads are shown
 - **Recent-First Ordering**: Most recent Reddit posts appear first for timely engagement
 - **Context-Aware Replies**: Generated responses use your business context
 - **Engagement Tracking**: Monitor which leads have been replied to
 - **Time Efficiency**: Streamlined workflow from discovery to engagement
 - **Metrics Dashboard**: Real-time tracking of lead engagement progress
+- **✨ Instant Feedback**: Progress toasts and indicators show exactly what's happening
 
 ## Technical Architecture
 
@@ -39,29 +44,38 @@ The Reddit Leads feature consists of:
 - **AI Filtering**: OpenAI GPT-4 for relevance filtering
 - **Database**: PostgreSQL with JSONB for flexible context storage
 - **Frontend**: React with React Query for data fetching
-- **Real-time Updates**: Optimistic UI updates with backend sync
+- **✨ Real-time Updates**: Server-Sent Events (SSE) with Redis pub/sub for live progress
+- **Progress Tracking**: Universal background task system with Redis storage
 
 ### Data Flow Architecture
 
 ```
-Company Creation
+Company Creation / Manual "Find More Leads"
        ↓
-Background Task: init_reddit()
-       ↓
-Generate Search Queries (AI)
-       ↓
-Search Google for Reddit Links
-       ↓
-Fetch Reddit Posts + Comments
-       ↓
-Filter with AI for Relevance
-       ↓
-Store in reddit_leads Table
-       ↓
-API: GET /reddit/next-10-posts
+Background Task: init_reddit_tracked()
+       ↓                    ↓
+Generate Search Queries    Progress Tracking Started
+       ↓                    ↓
+Search Google for Reddit   SSE: "Finding leads batch 1/10"
+       ↓                    ↓
+Fetch Reddit Posts + Comments   SSE: "Processing 10 posts..."
+       ↓                    ↓
+Filter with AI for Relevance   SSE: "Found 6 relevant leads"
+       ↓                    ↓
+Store in reddit_leads Table     SSE: "Batch 1 complete"
+       ↓                    ↓
+[Repeat for all batches]   SSE: Progress updates 2/10, 3/10...
+       ↓                    ↓
+Task Complete              SSE: "✅ Completed! 47 items found"
+       ↓                    ↓
+Cache Invalidation         Frontend Updates Automatically
+       ↓                    ↓
+API: GET /reddit/next-10-posts   Real-time Table Refresh
        ↓
 Frontend Display (Paginated)
 ```
+
+> **✨ Real-time Flow**: The system now provides live progress updates through SSE, showing users exactly what's happening during lead generation without requiring page refreshes.
 
 ## Database Schema
 

@@ -29,7 +29,7 @@ export const useRedditPosts = (pageNumber = 1) => {
       return data;
     },
     enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: 'always', // Always refetch when component mounts
     retry: 2,
   });
 };

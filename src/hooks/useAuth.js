@@ -7,6 +7,7 @@ export function useAuth() {
   // Get user data from React Query cache (no API calls, just reads cache)
   const { data: user } = useQuery({
     queryKey: ['user'],
+    queryFn: () => null, // Dummy function since enabled: false
     enabled: false, // Don't fetch, just read from cache
     staleTime: Infinity,
   });
@@ -14,6 +15,7 @@ export function useAuth() {
   // Get company data from React Query cache (no API calls, just reads cache)
   const { data: company } = useQuery({
     queryKey: ['company'],
+    queryFn: () => null, // Dummy function since enabled: false
     enabled: false, // Don't fetch, just read from cache
     staleTime: Infinity,
   });

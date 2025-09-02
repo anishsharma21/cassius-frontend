@@ -17,3 +17,10 @@
 .strategy-transition {
   transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
+
+/* Ensure buttons have pointer cursor */
+button,
+[role="button"],
+.cursor-pointer {
+  cursor: pointer !important;
+}

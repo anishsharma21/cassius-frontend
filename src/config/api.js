@@ -37,6 +37,11 @@ export const API_ENDPOINTS = {
   },
 
   feedback: `${API_BASE_URL}/feedback/`,
+
+  // Progress tracking endpoints
+  progressTasks: `${API_BASE_URL}/progress/tasks`,
+  progressStream: `${API_BASE_URL}/progress/stream`,
+  startRedditLeadsTask: `${API_BASE_URL}/progress/tasks/reddit-leads/start`,
 };
 
 export default API_ENDPOINTS;

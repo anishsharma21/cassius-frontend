@@ -4,6 +4,7 @@ import React from 'react';
 import './index.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ChatProvider } from './contexts/ChatContext';
+import { BackgroundTasksProvider } from './contexts/BackgroundTasksContext';
 
 import PrivateRoute from './components/route_guards/PrivateRoute';
 import PublicRoute from './components/route_guards/PublicRoute';
@@ -18,8 +19,10 @@ import CompanyProfile from './pages/CompanyProfile';
 import Guide from './pages/Guide';
 import Feedback from './pages/Feedback';
 import BlogPostEditorPage from './pages/BlogPostEditorPage';
+import UniversalProgressIndicator from './components/UniversalProgressIndicator';
 import { resetRedirectFlag, logout } from './utils/auth';
 import { setupApiInterceptor } from './utils/apiInterceptor';
+import { TASK_TYPE } from './contexts/BackgroundTasksContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,7 +70,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <ChatProvider>
+        <BackgroundTasksProvider>
+          <ChatProvider>
           <Routes>
             
             <Route path="/" element={<Navigate to="/login" replace />} />
@@ -87,7 +91,15 @@ function App() {
             </Route>
             
           </Routes>
-        </ChatProvider>
+          
+          {/* Global progress indicator for Reddit leads during signup */}
+          <UniversalProgressIndicator 
+            taskType={TASK_TYPE.REDDIT_LEADS}
+            title="Finding Reddit Leads"
+            position="top-right"
+          />
+          </ChatProvider>
+        </BackgroundTasksProvider>
       </Router>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
