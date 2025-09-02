@@ -64,8 +64,8 @@ export const BackgroundTasksProvider = ({ children }) => {
         eventSourceRef.current.close();
       }
       
-      console.log('🔌 Connecting to background tasks SSE stream...');
-      console.log('📍 SSE URL:', `${API_ENDPOINTS.progressStream}?token=${token.substring(0, 10)}...`);
+      // Avoid logging token in production; log only token length
+      console.log('📍 SSE URL:', `${API_ENDPOINTS.progressStream}?token=[token length: ${token.length}]`);
       
       const eventSource = new EventSource(`${API_ENDPOINTS.progressStream}?token=${token}`);
       eventSourceRef.current = eventSource;
