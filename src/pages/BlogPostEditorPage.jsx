@@ -127,13 +127,37 @@ const BlogPostEditorPage = () => {
     return () => window.removeEventListener('streamEnd', handleStreamEnd);
   }, [isReceivingContent, blogPost]);
 
-  // Simplified content stream function
+  // Enhanced content stream function with better error handling
   const startContentStream = () => {
     let lastContentLength = 0;
     let noUpdateCount = 0;
+    let totalWaitTime = 0;
+    const maxWaitTime = 300; // 30 seconds timeout (300 * 100ms)
+    let intervalCleared = false; // Track if interval has been cleared
+    
+    console.log('🚀 Starting content stream monitoring for slug:', blogPost.slug);
     
     // Check for content updates every 100ms
     const interval = setInterval(async () => {
+      // If interval was already cleared, don't continue
+      if (intervalCleared) {
+        return;
+      }
+      
+      totalWaitTime++;
+      
+      // Only check for timeout if we're still actively receiving content
+      // Don't timeout if content was already successfully saved
+      if (totalWaitTime >= maxWaitTime && isReceivingContent) {
+        console.log('⏰ Stream monitoring timeout reached (30s), stopping');
+        setIsReceivingContent(false);
+        intervalCleared = true;
+        clearInterval(interval);
+        // Show user message about timeout
+        setContent('⚠️ Content generation timed out. Please try creating the blog post again or contact support if this issue persists.');
+        return;
+      }
+      
       // Check for content updates
       const currentContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
       console.log('🔍 Checking localStorage for slug:', blogPost.slug, 'content found:', !!currentContent, 'length:', currentContent?.length || 0);
@@ -171,32 +195,43 @@ const BlogPostEditorPage = () => {
               // Reset streaming state
               setIsReceivingContent(false);
               
+              // Mark interval as cleared and stop it
+              intervalCleared = true;
               clearInterval(interval);
               console.log('🧹 Cleanup completed for slug:', blogPost.slug);
+              return; // Exit completely
             } else {
               console.log('⚠️ No content found, stopping stream monitoring');
               setIsReceivingContent(false);
+              intervalCleared = true;
               clearInterval(interval);
+              return; // Exit completely
             }
           }
         }
       } else {
         // No content in localStorage, increment counter
         noUpdateCount++;
-        console.log('⏳ No content in localStorage, counter:', noUpdateCount);
+        console.log('⏳ No content in localStorage, counter:', noUpdateCount, 'total wait time:', totalWaitTime * 100, 'ms');
         
-        // If no content for 1 second (10 * 100ms), stop monitoring
-        if (noUpdateCount >= 10) {
-          console.log('⚠️ No content found in localStorage, stopping stream monitoring');
+        // If no content for 5 seconds (50 * 100ms) and we've been waiting less than 10 seconds total, continue waiting
+        // If we've been waiting more than 10 seconds total with no content, stop monitoring
+        if (noUpdateCount >= 50 && totalWaitTime >= 100) {
+          console.log('⚠️ No content found in localStorage after significant wait time, stopping stream monitoring');
           setIsReceivingContent(false);
+          intervalCleared = true;
           clearInterval(interval);
+          setContent('⚠️ No content received from the AI. Please try creating the blog post again.');
+          return; // Exit completely
         }
       }
     }, 100);
     
     // Return cleanup function
     return () => {
+      intervalCleared = true;
       clearInterval(interval);
+      console.log('🧹 Stream monitoring cleanup function called');
     };
   };
 

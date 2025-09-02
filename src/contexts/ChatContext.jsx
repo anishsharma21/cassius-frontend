@@ -157,19 +157,8 @@ export const ChatProvider = ({ children }) => {
                       };
                       queryClient.setQueryData(['blogPost', slug], tempBlogPost);
                     }
-                  } else if (data.content.startsWith('---REDIRECT_BLOG_POST_EDITOR:')) {
-                    // Redirect to blog post editor
-                    const match = data.content.match(/---REDIRECT_BLOG_POST_EDITOR:(.+)---/);
-                    if (match) {
-                      const slug = match[1];
-                      // Small delay to ensure stream location is fully set before redirect
-                      setTimeout(() => {
-                        console.log('🚀 Redirecting to blog post editor:', slug);
-                        navigate(`/dashboard/geo/${slug}`);
-                      }, 100);
-                    }
                   } else if (data.content.startsWith('---LOAD_STREAM_BLOG_POST_EDITOR:')) {
-                    // Switch stream to blog post editor
+                    // Switch stream to blog post editor FIRST before any redirect
                     const match = data.content.match(/---LOAD_STREAM_BLOG_POST_EDITOR:(.+)---/);
                     if (match) {
                       const slug = match[1];
@@ -185,6 +174,26 @@ export const ChatProvider = ({ children }) => {
                       setStreamLocation(`BLOG_POST:${slug}`);
                       streamLocationRef.current = `BLOG_POST:${slug}`;
                       console.log('✅ Stream location updated - streamLocationRef.current:', streamLocationRef.current);
+                    }
+                  } else if (data.content.startsWith('---REDIRECT_BLOG_POST_EDITOR:')) {
+                    // Redirect to blog post editor AFTER stream location is set
+                    const match = data.content.match(/---REDIRECT_BLOG_POST_EDITOR:(.+)---/);
+                    if (match) {
+                      const slug = match[1];
+                      // Ensure stream location is already set by checking ref
+                      if (streamLocationRef.current === `BLOG_POST:${slug}`) {
+                        console.log('🚀 Redirecting to blog post editor with stream location confirmed:', slug);
+                        navigate(`/dashboard/geo/${slug}`);
+                      } else {
+                        // Fallback: set stream location and then redirect
+                        console.log('⚠️ Stream location not set, setting it now before redirect');
+                        setStreamLocation(`BLOG_POST:${slug}`);
+                        streamLocationRef.current = `BLOG_POST:${slug}`;
+                        setTimeout(() => {
+                          console.log('🚀 Redirecting to blog post editor after fallback setup:', slug);
+                          navigate(`/dashboard/geo/${slug}`);
+                        }, 50);
+                      }
                     }
                   } else if (data.content.startsWith('---REDIRECT_REDDIT_HUB---')) {
                     // Redirect to Reddit hub page and mark message as Reddit-related
