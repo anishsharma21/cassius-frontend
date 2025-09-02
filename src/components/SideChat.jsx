@@ -3,9 +3,10 @@ import ReactMarkdown from 'react-markdown';
 import useChatConversation from '../hooks/useChatConversation';
 import useChatAPI from '../hooks/useChatAPI';
 
-const SideChat = () => {
+const SideChat = ({ isCollapsed = false, onToggleCollapse }) => {
   const [prompt, setPrompt] = useState('');
   const [showClearTooltip, setShowClearTooltip] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(false);
   
   const conversationRef = useRef(null);
   
@@ -104,34 +105,89 @@ const SideChat = () => {
     console.log('🧹 Chat history cleared - conversation, streaming states, and context reset');
   };
 
+  // Quick action functions
+  const handleQuickAction = (text) => {
+    setPrompt(text);
+    setShowQuickActions(false);
+  };
+
+  // Show quick actions when input is focused and empty
+  const handleInputFocus = () => {
+    if (!prompt.trim()) {
+      setShowQuickActions(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Hide after a small delay to allow clicks on quick actions
+    setTimeout(() => setShowQuickActions(false), 200);
+  };
+
+  // Hide quick actions when user starts typing
+  useEffect(() => {
+    if (prompt.trim()) {
+      setShowQuickActions(false);
+    }
+  }, [prompt]);
+
+  // If collapsed, show minimal view with entire panel clickable
+  if (isCollapsed) {
+    return (
+      <div 
+        className="flex flex-col h-full items-center justify-center transition-all duration-300 ease-in-out cursor-pointer hover:bg-gray-50"
+        onClick={onToggleCollapse}
+        title="Expand chat"
+      >
+        {/* Double arrow pointing left centered vertically */}
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" className="text-gray-600 transition-transform duration-300 hover:scale-110">
+          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 7l-4 4 4 4M19 7l-4 4 4 4" />
+        </svg>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full transition-all duration-300 ease-in-out">
       {/* Header */}
       <div className="flex justify-between -mt-1 items-center p-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-base font-medium text-black">Chat with Cassius Intelligence</h3>
-        </div>
-        <div className="relative">
-          <button className="cursor-pointer"
-            onMouseEnter={() => setShowClearTooltip(true)}
-            onMouseLeave={() => setShowClearTooltip(false)}
-            onClick={clearChat}
+          {/* Collapse Button - moved to top left */}
+          <button
+            onClick={onToggleCollapse}
+            className="cursor-pointer p-1 hover:bg-gray-100 rounded transition-all duration-200 transform hover:scale-110"
+            title="Collapse chat"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/></svg>
+            {/* Double arrow pointing right */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
+              <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17l4-4-4-4M5 17l4-4-4-4" />
+            </svg>
           </button>
-          
-          {/* Clear Chat Tooltip */}
-          {showClearTooltip && (
-            <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
-              Clear chat
-            </div>
-          )}
+          <h3 className="text-base font-medium text-black transition-opacity duration-300">Chat with Cassius Intelligence</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Clear Button */}
+          <div className="relative">
+            <button className="cursor-pointer"
+              onMouseEnter={() => setShowClearTooltip(true)}
+              onMouseLeave={() => setShowClearTooltip(false)}
+              onClick={clearChat}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12a9 9 0 0 0 15 6.708L21 16m0-4A9 9 0 0 0 6 5.292L3 8m18 13v-5m0 0h-5M3 3v5m0 0h5"/></svg>
+            </button>
+            
+            {/* Clear Chat Tooltip */}
+            {showClearTooltip && (
+              <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                Clear chat
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Conversation Area */}
       <div
-        className="px-4 py-4 overflow-y-auto"
+        className="px-4 py-4 overflow-y-auto transition-all duration-300"
         style={{ height: '760px' }}
         ref={conversationRef}
       >
@@ -206,6 +262,31 @@ const SideChat = () => {
 
       {/* Chat Prompt Box */}
       <div className="mt-auto px-3 py-3">
+        {/* Quick Action Popups */}
+        {showQuickActions && (
+          <div className="absolute bottom-full mb-2 left-3 right-3 z-10 animate-in slide-in-from-bottom-2 fade-in duration-200">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 space-y-2">
+              <button
+                onClick={() => handleQuickAction("create a blog post for my business")}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-all duration-200 cursor-pointer flex items-center gap-2 hover:translate-x-1"
+              >
+                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Ask to create a blog post
+              </button>
+              <button
+                onClick={() => handleQuickAction("create a marketing plan for my business")}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-all duration-200 cursor-pointer flex items-center gap-2 hover:translate-x-1"
+              >
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Ask for a marketing strategy
+              </button>
+            </div>
+          </div>
+        )}
         <div className="relative h-26 border bg-gray-100 border-gray-200 rounded-lg focus-within:border-black focus-within:border">
           <form onSubmit={handleSubmit} className="h-full text-base font-normal text-black pr-12 pl-3 pt-3">
             <textarea
@@ -214,6 +295,8 @@ const SideChat = () => {
               placeholder="Ask Cassius"
               className="w-full outline-none bg-transparent resize-none h-full overflow-y-auto text-base font-normal text-black placeholder-gray-500 focus:border-gray-400"
               rows="1"
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();

@@ -10,6 +10,8 @@ const DashboardLayout = () => {
   const [chatWidth, setChatWidth] = useState(40); // Percentage - increased default width
   const [isDragging, setIsDragging] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { conversation } = useChatConversation();
@@ -35,6 +37,23 @@ const DashboardLayout = () => {
       setIsSidebarCollapsed(true);
     }
   }, [location.pathname]);
+
+  // Automatically expand chat when transitioning from central Strategy view to side view (only once)
+  useEffect(() => {
+    if (isStrategyPage && conversation.length > 0 && isChatCollapsed && !hasAutoExpanded) {
+      // User just submitted a message from Strategy page central chat for the first time
+      // Ensure side chat opens in expanded mode
+      setIsChatCollapsed(false);
+      setHasAutoExpanded(true);
+    }
+  }, [isStrategyPage, conversation.length, isChatCollapsed, hasAutoExpanded]);
+
+  // Reset auto-expand flag when returning to central view (no conversation)
+  useEffect(() => {
+    if (showCentralStrategyView) {
+      setHasAutoExpanded(false);
+    }
+  }, [showCentralStrategyView]);
 
   const handleMouseDown = (e) => {
     setIsDragging(true);
@@ -64,6 +83,13 @@ const DashboardLayout = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  const toggleChatCollapse = () => {
+    setIsChatCollapsed(!isChatCollapsed);
+  };
+
+  // Calculate effective chat width - collapsed chat takes minimal space
+  const effectiveChatWidth = isChatCollapsed ? 4 : chatWidth; // 4% for collapsed state
+
   return (
     <div className="flex h-screen bg-gray-100">
         {/* Sidebar Component */}
@@ -82,16 +108,16 @@ const DashboardLayout = () => {
         <div className="flex flex-1 p-2 min-h-0">
           {/* Main Page - Floating white section */}
           <div 
-            className="-ml-2 px-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col"
-            style={{ width: shouldHideSideChat ? '100%' : `${100 - chatWidth}%` }}
+            className="-ml-2 px-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col flex-1"
+            style={{ width: shouldHideSideChat ? '100%' : undefined }}
           >
             <div className="flex-1 overflow-y-auto">
               <Outlet />
             </div>
           </div>
           
-          {/* Draggable Divider - Hide when showing central Strategy view */}
-          {!shouldHideSideChat && (
+          {/* Draggable Divider - Hide when showing central Strategy view or chat is collapsed */}
+          {!shouldHideSideChat && !isChatCollapsed && (
             <div
               className="w-2 bg-gray-100 cursor-col-resize transition-colors relative"
               onMouseDown={handleMouseDown}
@@ -103,10 +129,15 @@ const DashboardLayout = () => {
           {/* Chat Page - Floating white section - Hide when showing central Strategy view */}
           {!shouldHideSideChat && (
             <div 
-              className="bg-white rounded-xl shadow-sm overflow-hidden"
-              style={{ width: `${chatWidth}%` }}
+              className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 ease-in-out ml-auto"
+              style={{ 
+                width: `${effectiveChatWidth}%`
+              }}
             >
-              <SideChat />
+              <SideChat 
+                isCollapsed={isChatCollapsed}
+                onToggleCollapse={toggleChatCollapse}
+              />
             </div>
           )}
         </div>
