@@ -187,8 +187,15 @@ export const ChatProvider = ({ children }) => {
                       console.log('✅ Stream location updated - streamLocationRef.current:', streamLocationRef.current);
                     }
                   } else if (data.content.startsWith('---REDIRECT_REDDIT_HUB---')) {
-                    // Redirect to Reddit hub page
+                    // Redirect to Reddit hub page and mark message as Reddit-related
                     console.log('🚀 Redirecting to Reddit hub');
+                    
+                    // Update the AI message to mark it as Reddit-related so the button appears
+                    updateAIMessage(aiMessageId, { 
+                      redditLink: 'https://reddit.com', // Generic Reddit link since we don't have specific subreddit
+                      contentType: 'reddit_reply' 
+                    });
+                    
                     setTimeout(() => {
                       console.log('🎯 Navigating to /dashboard/reddit');
                       navigate('/dashboard/reddit');
