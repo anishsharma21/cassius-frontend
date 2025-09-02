@@ -5,6 +5,7 @@ import './index.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ChatProvider } from './contexts/ChatContext';
 import { BackgroundTasksProvider } from './contexts/BackgroundTasksContext';
+import { useAutoPostHogIdentify } from './hooks/usePostHogIdentify';
 
 import PrivateRoute from './components/route_guards/PrivateRoute';
 import PublicRoute from './components/route_guards/PublicRoute';
@@ -61,6 +62,9 @@ if (typeof window !== 'undefined') {
 }
 
 function App() {
+  // Auto-identify user with PostHog if authenticated
+  useAutoPostHogIdentify();
+  
   // Reset redirect flag and setup API interceptor when app mounts
   React.useEffect(() => {
     resetRedirectFlag();

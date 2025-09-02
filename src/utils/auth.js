@@ -1,12 +1,17 @@
 import { jwtDecode } from "jwt-decode";
 import posthog from 'posthog-js';
 
+const POSTHOG_IDENTIFIED_KEY = 'posthog_user_identified';
+
 // Global flag to prevent multiple redirects
 let isRedirecting = false;
 
 export function logout() {
   // Clear only the access token from localStorage
   localStorage.removeItem('access_token');
+  
+  // Clear PostHog identification flag
+  sessionStorage.removeItem(POSTHOG_IDENTIFIED_KEY);
   
   // Reset PostHog user identification
   try {
@@ -38,6 +43,9 @@ export function handleUnauthorizedResponse(queryClient) {
   // Clear access token
   localStorage.removeItem('access_token');
   
+  // Clear PostHog identification flag
+  sessionStorage.removeItem(POSTHOG_IDENTIFIED_KEY);
+  
   // Reset PostHog user identification
   try {
     posthog.reset();
@@ -67,6 +75,9 @@ export async function authFetch(url, options = {}) {
         
         // Clear auth data
         localStorage.removeItem('access_token');
+        
+        // Clear PostHog identification flag
+        sessionStorage.removeItem(POSTHOG_IDENTIFIED_KEY);
         
         // Reset PostHog user identification
         try {

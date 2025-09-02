@@ -4,9 +4,10 @@ const PostHogWrapper = ({ children }) => {
   // Check if we're in development mode or missing config
   const isDevelopment = import.meta.env.DEV
   const hasPostHogConfig = import.meta.env.VITE_PUBLIC_POSTHOG_KEY && import.meta.env.VITE_PUBLIC_POSTHOG_HOST
+  const devOverride = import.meta.env.VITE_POSTHOG_DEV_OVERRIDE === 'true'
 
-  // If in development or missing config, just render children without PostHog
-  if (isDevelopment || !hasPostHogConfig) {
+  // If in development (without override) or missing config, just render children without PostHog
+  if ((isDevelopment && !devOverride) || !hasPostHogConfig) {
     return children
   }
 

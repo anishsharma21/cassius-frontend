@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { usePostHog } from 'posthog-js/react';
 import { jwtDecode } from 'jwt-decode';
 import API_ENDPOINTS from '../config/api';
 import cassiusLogo from '../assets/cassius.png';
 import { resetRedirectFlag } from '../utils/auth';
+import { usePostHogIdentify } from '../hooks/usePostHogIdentify';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -20,7 +20,7 @@ function Login() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const posthog = usePostHog();
+  const { identifyUser } = usePostHogIdentify();
 
   // Token expiration state from ProtectedRoute
   useEffect(() => {
@@ -76,10 +76,8 @@ function Login() {
         const decodedToken = jwtDecode(data.access_token);
         const userEmail = decodedToken.sub;
         
-        // Identify user in PostHog with email as the distinct ID
-        posthog?.identify(userEmail, {
-          email: userEmail,
-        });
+        // Use centralized identification function
+        identifyUser(userEmail);
       } catch (error) {
         console.warn('Failed to identify user in PostHog:', error);
       }
