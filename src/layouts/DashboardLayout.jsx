@@ -25,7 +25,7 @@ const DashboardLayout = () => {
     if (isNewUser === 'true' && location.pathname === '/dashboard') {
       // Clear the flag and redirect to guide
       localStorage.removeItem('isNewUser');
-      navigate('/dashboard/guide', { replace: true });
+      navigate('/dashboard/strategy', { replace: true });
     }
   }, [navigate, location.pathname]);
 
