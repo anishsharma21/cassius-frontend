@@ -370,6 +370,7 @@ def find_site_rank_google_api(query: str, target_url: str, num_results: int = 20
 ```
 
 **Features:**
+
 - **Domain Normalization**: Handles www, https, trailing slashes
 - **Registered Domain Matching**: Matches blog.example.com with example.com
 - **Two-Page Search**: Covers top 20 Google results
@@ -378,36 +379,138 @@ def find_site_rank_google_api(query: str, target_url: str, num_results: int = 20
 
 ### AI-Powered Content Generation
 
-#### Enhanced Chat Integration for Blog Creation
+#### Chat-Driven Blog Creation Flow
 
-SEO blog posts can be created through the chat interface using the `CREATE_GEO_BLOG` intent with comprehensive SEO optimization:
+The SEO module provides a seamless chat-to-blog creation experience where users can request blog posts through natural language in the Cassius chat interface. This feature orchestrates multiple components to deliver real-time content generation directly in the blog editor.
+
+**Complete User Journey:**
+
+1. **Chat Initiation**: User types "Create a blog about [topic]" in the Cassius chat sidebar
+2. **Intent Recognition**: Backend identifies the CREATE_GEO_BLOG intent and extracts the topic
+3. **Database Creation**: System creates an empty blog post with unique title and slug
+4. **Automatic Navigation**: User is redirected to the blog editor at `/dashboard/geo/{slug}`
+5. **Real-time Generation**: AI-generated content streams directly into the editor
+6. **Auto-save**: Content automatically saves to database upon completion
+7. **Ready to Edit**: User can immediately edit, enhance, or publish the generated content
+
+#### Intent Routing System
+
+The chat system uses an intent-based routing mechanism to identify and handle blog creation requests:
+
+**Intent Detection Process:**
 
 ```python
-async def create_geo_blog_post_stream(payload: ChatMessageRequest, user_id: str):
-    # 1. Extract comprehensive business context (company name, core business, etc.)
+# In backend/src/features/chat/services.py
+async def plan_message(user_message: str, intent_cards: List[IntentCard]):
+    # 1. Analyze user message against available intent cards
+    # 2. Identify CREATE_GEO_BLOG intent for blog-related requests
+    # 3. Extract required inputs (topic) from the message
+    # 4. Route to appropriate function if all inputs present
+    # 5. Request missing inputs if needed
+```
+
+**Intent Card Configuration:**
+
+- **Intent ID**: `CREATE_GEO_BLOG`
+- **Description**: Create location-based blog posts for SEO
+- **Required Inputs**: `topic` (extracted from user message)
+- **Function Mapping**: Routes to `create_geo_blog_post_stream()`
+- **Fallback Behavior**: If no topic found, asks user to specify
+
+#### Enhanced Chat Integration for Blog Creation
+
+The `create_geo_blog_post_stream()` function orchestrates the entire blog creation process:
+
+```python
+async def create_geo_blog_post_stream(payload: ChatMessageRequest, user_id: str, topic: Optional[str]):
+    # 1. Extract comprehensive business context
+    ctx = await get_app_context(user_id)
+    company_name = ctx.get("company_name")
+    business_context = ctx.get("business_context")
+    
     # 2. Create empty blog post in database
-    # 3. Generate SEO-optimized content with structured business information
-    # 4. Dynamic word count (800-1200 or 1500-2000 based on topic complexity)
-    # 5. Include proper headings, internal/external links, and CTAs
-    # 6. Generate SEO title and meta description
-    # 7. Returns professionally formatted markdown content
+    new_blog_post = await create_blog_post(user_id, db)
+    
+    # 3. Send control signals to frontend
+    yield f"---CACHE_BLOG_POST:{new_blog_post.id}:{new_blog_post.slug}:{new_blog_post.title}---"
+    yield f"---REDIRECT_BLOG_POST_EDITOR:{new_blog_post.slug}---"
+    yield f"---LOAD_STREAM_BLOG_POST_EDITOR:{new_blog_post.slug}---"
+    
+    # 4. Generate SEO-optimized content
+    stream = await client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": seo_prompt}],
+        stream=True
+    )
+    
+    # 5. Stream content to frontend
+    yield f"---STREAM_START---"
+    async for chunk in stream:
+        yield chunk.choices[0].delta.content
+    yield f"---STREAM_END---"
+    yield f"---LOAD_STREAM_SIDE_CHAT---"
 ```
 
 **Enhanced SEO Features:**
+
 - **Business Context Integration**: Uses structured company profile information
+- **Dynamic Word Count**: 800-1200 words for standard topics, 1500-2000 for comprehensive guides
 - **Keyword Optimization**: Natural integration of primary and secondary keywords
 - **Professional Structure**: H1/H2/H3 headings with keyword-rich titles
 - **Link Strategy**: Internal links to company website and external authority links
 - **Call-to-Action**: Customized CTAs based on business type and goals
 - **Meta Optimization**: SEO title (~60 chars) and meta description (~155 chars)
 
-**Streaming Protocol:**
-- `---CACHE_BLOG_POST:{id}:{slug}:{title}---` - Cache new post
-- `---REDIRECT_BLOG_POST_EDITOR:{slug}---` - Navigate to editor  
-- `---LOAD_STREAM_BLOG_POST_EDITOR:{slug}---` - Start content streaming
-- `---STREAM_START---` - Begin content delivery
-- Content chunks streamed in real-time
-- `---STREAM_END---` - Completion signal
+#### Streaming Protocol & Signal Processing
+
+The system uses Server-Sent Events (SSE) with special control signals to coordinate between chat and blog editor:
+
+**Control Signals:**
+
+| Signal | Purpose | Frontend Handler |
+|--------|---------|------------------|
+| `---CACHE_BLOG_POST:{id}:{slug}:{title}---` | Pre-cache blog post in React Query | `ChatContext`: Stores in query cache |
+| `---REDIRECT_BLOG_POST_EDITOR:{slug}---` | Navigate to blog editor | `ChatContext`: Calls `navigate()` |
+| `---LOAD_STREAM_BLOG_POST_EDITOR:{slug}---` | Switch stream destination | `ChatContext`: Sets `streamLocation` |
+| `---STREAM_START---` | Content generation beginning | `ChatContext`: Updates UI state |
+| `---STREAM_END---` | Content generation complete | `ChatContext`: Dispatches completion event |
+| `---LOAD_STREAM_SIDE_CHAT---` | Reset stream to chat | `ChatContext`: Resets `streamLocation` |
+
+**Frontend Signal Processing (ChatContext.jsx):**
+
+```javascript
+// Handle special backend signals
+if (data.content.startsWith('---CACHE_BLOG_POST:')) {
+    // Parse and cache the blog post
+    const [id, slug, title] = match[1].split(':');
+    queryClient.setQueryData(['blogPost', slug], tempBlogPost);
+    
+} else if (data.content.startsWith('---REDIRECT_BLOG_POST_EDITOR:')) {
+    // Navigate to editor
+    const slug = match[1];
+    navigate(`/dashboard/geo/${slug}`);
+    
+} else if (data.content.startsWith('---LOAD_STREAM_BLOG_POST_EDITOR:')) {
+    // Route subsequent content to blog editor via localStorage
+    const slug = match[1];
+    setStreamLocation(`BLOG_POST:${slug}`);
+    streamLocationRef.current = `BLOG_POST:${slug}`;
+    
+} else if (streamLocationRef.current.startsWith('BLOG_POST:')) {
+    // Route content chunks to localStorage for blog editor
+    const blogPostSlug = streamLocationRef.current.split(':')[1];
+    const existingContent = localStorage.getItem(`blogPostContent_${blogPostSlug}`) || '';
+    localStorage.setItem(`blogPostContent_${blogPostSlug}`, existingContent + data.content);
+}
+```
+
+**Content Routing Mechanism:**
+
+1. **Default State**: Content streams to chat sidebar (`streamLocation: 'SIDE_CHAT'`)
+2. **Blog Creation**: Signal switches to `streamLocation: 'BLOG_POST:{slug}'`
+3. **Content Routing**: Chunks stored in `localStorage` with key `blogPostContent_{slug}`
+4. **Editor Reception**: BlogPostEditorPage monitors localStorage for updates
+5. **Completion**: Stream resets to chat sidebar
 
 ### Google Search Integration
 
@@ -421,6 +524,7 @@ async def create_geo_blog_post_stream(payload: ChatMessageRequest, user_id: str)
 #### Ranking Update System
 
 Search rankings are fetched during company initialization and can be refreshed through:
+
 - Manual ranking updates (planned feature)
 - Periodic background jobs (planned feature)
 - API-triggered updates
@@ -439,11 +543,47 @@ Company Creation → init_geo() → AI Search Term Generation
 
 ### Blog Post Creation Flow
 
+#### Via Chat Interface (AI-Powered)
+
 ```plaintext
-User Creates Post → Empty Post in DB → AI Content Streaming
-                                   → Real-time Editor Updates  
-                                   → Auto-save When Complete
-                                   → Published Blog Post
+User Message in Chat → Intent Recognition (CREATE_GEO_BLOG)
+                    ↓
+                    Extract Topic from Message
+                    ↓
+                    Create Empty Blog Post in DB
+                    ↓
+                    Send Control Signals via SSE:
+                    • CACHE_BLOG_POST (pre-cache in React Query)
+                    • REDIRECT_BLOG_POST_EDITOR (navigate user)
+                    • LOAD_STREAM_BLOG_POST_EDITOR (switch routing)
+                    ↓
+                    Generate AI Content with Business Context
+                    ↓
+                    Stream Content Chunks → ChatContext Routes to localStorage
+                                        ↓
+                                        Blog Editor Monitors localStorage
+                                        ↓
+                                        Real-time Content Display
+                                        ↓
+                    Stream End Signal → Auto-save to Database
+                                    ↓
+                                    Cleanup localStorage
+                                    ↓
+                                    Ready for User Edits
+```
+
+#### Via Manual Creation (SEO Hub)
+
+```plaintext
+User Clicks + Button → Create Empty Post in DB
+                    ↓
+                    Navigate to Editor
+                    ↓
+                    User Writes Content
+                    ↓
+                    Manual Save → Update Database
+                              ↓
+                              Published Blog Post
 ```
 
 ### Search Term Ranking Flow
@@ -459,34 +599,139 @@ Business Context → AI Term Generation → Google Custom Search API
 
 ### Frontend Streaming Implementation
 
-The blog editor uses a sophisticated streaming system for AI-generated content:
+The blog creation feature uses a sophisticated multi-component streaming system that coordinates between the chat interface and blog editor:
 
-**1. Content Monitoring:**
+#### ChatContext Stream Management
+
+The `ChatContext.jsx` component serves as the central routing hub for all streaming content:
+
+**Stream Location Management:**
+
 ```javascript
-// Check localStorage every 100ms for new content
-const interval = setInterval(async () => {
-  const currentContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
-  if (currentContent && contentChanged) {
-    setContent(currentContent);
-    // Auto-save when streaming stops
-  }
-}, 100);
+// State and ref to track where content should be routed
+const [streamLocation, setStreamLocation] = useState('SIDE_CHAT');
+const streamLocationRef = useRef('SIDE_CHAT');
+
+// Keep ref in sync with state for reliable async access
+useEffect(() => {
+    streamLocationRef.current = streamLocation;
+}, [streamLocation]);
 ```
 
-**2. Auto-Save Logic:**
-- Detects when streaming completes (no updates for 1 second)
-- Automatically saves content to database
-- Cleans up localStorage
-- Updates UI state
+**Content Routing Logic:**
 
-**3. Streaming States:**
-- `isReceivingContent` - Tracks active streaming
+- **SIDE_CHAT**: Default state - content displays in chat sidebar
+- **BLOG_POST:{slug}**: Blog creation mode - content routes to localStorage
+- **Dynamic Switching**: Signals instantly change routing destination
+
+#### Blog Editor Content Reception
+
+The `BlogPostEditorPage.jsx` implements intelligent content monitoring:
+
+**1. New Post Detection:**
+
+```javascript
+// Detect newly created posts waiting for AI content
+if (blogPost && blogPost.content === '' && blogPost.company_id === null) {
+    console.log('Starting content stream for new blog post:', blogPost.slug);
+    setIsReceivingContent(true);
+    const cleanup = startContentStream();
+    return cleanup;
+}
+```
+
+**2. Real-time Content Monitoring:**
+
+```javascript
+const startContentStream = () => {
+    let lastContentLength = 0;
+    let noUpdateCount = 0;
+    
+    const interval = setInterval(async () => {
+        const currentContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
+        
+        if (currentContent) {
+            const newContentLength = currentContent.length;
+            
+            if (newContentLength !== lastContentLength) {
+                // Update editor with new content
+                setContent(currentContent);
+                setOriginalContent(currentContent);
+                lastContentLength = newContentLength;
+                noUpdateCount = 0;
+            } else {
+                noUpdateCount++;
+                
+                // Auto-save after 2 seconds of no updates
+                if (noUpdateCount >= 20 && currentContent.length > 0) {
+                    await autoSaveBlogPost(currentContent);
+                    localStorage.removeItem(`blogPostContent_${blogPost.slug}`);
+                    setIsReceivingContent(false);
+                    clearInterval(interval);
+                }
+            }
+        }
+    }, 100); // Check every 100ms for smooth updates
+    
+    return () => clearInterval(interval);
+};
+```
+
+**3. Stream Completion Handling:**
+
+```javascript
+// Listen for explicit stream end signal from ChatContext
+useEffect(() => {
+    const handleStreamEnd = () => {
+        if (isReceivingContent && blogPost) {
+            const finalContent = localStorage.getItem(`blogPostContent_${blogPost.slug}`);
+            if (finalContent && finalContent.length > 0) {
+                autoSaveBlogPost(finalContent);
+                localStorage.removeItem(`blogPostContent_${blogPost.slug}`);
+                setIsReceivingContent(false);
+            }
+        }
+    };
+    
+    window.addEventListener('streamEnd', handleStreamEnd);
+    return () => window.removeEventListener('streamEnd', handleStreamEnd);
+}, [isReceivingContent, blogPost]);
+```
+
+**4. Auto-Save Implementation:**
+
+```javascript
+const autoSaveBlogPost = async (content) => {
+    try {
+        // Update local state
+        setContent(content);
+        setOriginalContent(content);
+        
+        // Save to database
+        const result = await updateBlogPostMutation.mutateAsync({
+            blogPostId: blogPost.id,
+            content: content,
+        });
+        
+        console.log('Auto-save completed successfully');
+    } catch (error) {
+        console.error('Failed to auto-save:', error);
+    }
+};
+```
+
+**5. Streaming States & Indicators:**
+
+- `isReceivingContent` - Tracks if actively receiving AI content
+- `isManualSaving` - Distinguishes manual saves from auto-saves
 - Content length monitoring for completion detection
-- Fallback mechanisms for failed streams
+- Custom event system for cross-component communication
+- Fallback mechanisms for network failures
 
 ### Backend Streaming Architecture
 
 **1. SSE Stream Generation:**
+
 ```python
 async def create_geo_blog_post_stream():
     # Create empty blog post
@@ -500,6 +745,7 @@ async def create_geo_blog_post_stream():
 ```
 
 **2. Content Optimization:**
+
 - Business context integration
 - 700-900 word target length
 - SEO-focused prompts
@@ -554,12 +800,14 @@ async def create_geo_blog_post_stream():
 ### Specific Error Scenarios
 
 **Blog Post Management:**
+
 - Duplicate title prevention
 - Permission validation for all operations
 - Graceful handling of missing blog posts
 - Slug generation collision resolution
 
 **Search Term Management:**
+
 - Google API failure handling
 - Rate limit management
 - Domain matching edge cases
@@ -569,6 +817,7 @@ async def create_geo_blog_post_stream():
 ### Required Environment Variables
 
 **Backend:**
+
 ```bash
 OPENAI_API_KEY=your_openai_api_key
 GOOGLE_CSE_API_KEY=your_google_custom_search_api_key  
@@ -576,6 +825,7 @@ GOOGLE_CSE_ID=your_custom_search_engine_id
 ```
 
 **Frontend:**
+
 ```bash
 VITE_API_BASE_URL=your_backend_api_url
 ```

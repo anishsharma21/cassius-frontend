@@ -89,6 +89,7 @@ CREATE TABLE reddit_leads (
 ### Context Field Structure
 
 For **Posts**:
+
 ```json
 {
   "post_id": "abc123"
@@ -96,6 +97,7 @@ For **Posts**:
 ```
 
 For **Comments**:
+
 ```json
 {
   "post_id": "abc123",
@@ -110,41 +112,51 @@ For **Comments**:
 #### Lead Discovery Process (`backend/src/features/reddit/services.py`)
 
 **1. Query Generation**
+
 ```python
 async def generate_search_queries(business_context: str, num_queries: int = 10)
 ```
+
 - Uses OpenAI to generate relevant search queries
 - Based on business context and target market
 - Returns list of optimized search terms
 
 **2. Reddit Link Discovery**
+
 ```python
 async def google_search_reddit_links(query: str, num_links: int = 10)
 ```
+
 - Uses Google Discovery Engine API
 - Searches specifically for Reddit discussions
 - Returns relevant Reddit post URLs
 
 **3. Content Fetching**
+
 ```python
 async def fetch_post_with_comments(url: str)
 ```
+
 - Uses PRAW (Python Reddit API Wrapper)
 - Fetches post content and top 5 comments
 - Includes metadata (scores, timestamps, etc.)
 
 **4. AI Filtering**
+
 ```python
 async def filter_reddit_posts_llm(list_of_post_titles: list, business_context: str)
 ```
+
 - Uses GPT-4 to identify relevant leads
 - Filters based on business context
 - Returns only high-potential leads
 
 **5. Database Storage**
+
 ```python
 async def _save_reddit_objects(company_id: str, new_objects: List[Dict])
 ```
+
 - Batch inserts leads into database
 - Uses PostgreSQL upsert for idempotency
 - Maintains data integrity
@@ -178,6 +190,7 @@ export const useRedditPosts = (pageNumber = 1) => {
 #### Main UI Component (`frontend/src/pages/Reddit/Reddit.jsx`)
 
 **LeadsTabContent Component**:
+
 - Displays paginated data table with recent posts first
 - Shows post creation dates with relative time formatting
 - Expandable rows for comments
@@ -185,6 +198,7 @@ export const useRedditPosts = (pageNumber = 1) => {
 - Real-time metric updates
 
 **Key Features**:
+
 - **Recent-First Display**: Posts sorted by creation time (newest first)
 - **Date Column**: Shows "2h ago", "1d ago", or absolute dates for older posts
 - **Optimistic Updates**: Local state updates before backend confirmation
@@ -206,11 +220,13 @@ export const useRedditPosts = (pageNumber = 1) => {
 ### Lead Discovery Triggers
 
 **Automatic Initialization**:
+
 - Triggered during company creation
 - Runs as background task via `asyncio.create_task()`
 - No user intervention required
 
 **Discovery Parameters**:
+
 - Default: 10 search queries
 - Default: 10 Reddit links per query
 - Processes in sequential batches for efficiency
@@ -218,26 +234,30 @@ export const useRedditPosts = (pageNumber = 1) => {
 ### Relevance Scoring
 
 **AI Filtering Criteria**:
+
 - Business context alignment
 - Problem-solution fit
 - Target audience match
 - Engagement potential
 
 **Ranking Factors**:
+
 - **Post recency** (primary sort - most recent first)
-- Reddit score (upvotes) 
+- Reddit score (upvotes)
 - Comment count
 - Content relevance
 
 ### Reply Generation
 
 **Context Components**:
+
 - Business description
 - Website URL
 - User-provided context
 - Original post/comment content
 
 **Generation Strategy**:
+
 - Authentic, value-first approach
 - Natural business integration
 - Community-appropriate tone
@@ -248,12 +268,14 @@ export const useRedditPosts = (pageNumber = 1) => {
 ### Optimization Strategies
 
 **Backend**:
+
 - Async/await for all I/O operations
 - Batch database insertions
 - Connection pooling for external APIs
 - Background task processing
 
 **Frontend**:
+
 - React Query caching (5-minute stale time)
 - Optimistic UI updates
 - Paginated data loading
@@ -262,11 +284,13 @@ export const useRedditPosts = (pageNumber = 1) => {
 ### Rate Limiting & Quotas
 
 **External APIs**:
+
 - Google Discovery Engine: Project quotas apply
 - Reddit API: 60 requests/minute via PRAW
 - OpenAI: Standard rate limits apply
 
 **Internal Protections**:
+
 - Company-based data isolation
 - User authentication required
 - Pagination limits (10 items/page)
@@ -298,12 +322,14 @@ async def init_company_resources(company_id, ...):
 ### Key Metrics Tracked
 
 **Lead Discovery**:
+
 - Total leads discovered
 - Leads per company
 - Discovery success rate
 - AI filtering accuracy
 
 **User Engagement**:
+
 - Reply rate (replied_count / total_count)
 - Time to first reply
 - Generated reply usage
@@ -369,11 +395,13 @@ async def init_company_resources(company_id, ...):
 ### Chronological Sorting Implementation
 
 **Backend Changes** (`backend/src/features/reddit/services.py`):
+
 - Modified `get_next_10_posts()` to sort by `created_at DESC` instead of `score DESC`
 - Updated `get_post_comments()` to use consistent chronological sorting
 - Comments now also display in recent-first order
 
 **Frontend Enhancements** (`frontend/src/pages/Reddit/`):
+
 - Added "Posted" column to Reddit leads table
 - Implemented smart date formatting:
   - "just now", "2m ago", "1h ago" for recent posts
@@ -383,6 +411,7 @@ async def init_company_resources(company_id, ...):
 - Added `formatPostDate()` helper function for relative time display
 
 **User Experience Improvements**:
+
 - **Freshest Leads First**: Users see the most recent discussions for timely engagement
 - **Visual Date Context**: Clear indication of when posts were created
 - **Better Engagement Timing**: Focus on recent conversations with higher engagement potential
