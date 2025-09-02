@@ -186,6 +186,13 @@ export const ChatProvider = ({ children }) => {
                       streamLocationRef.current = `BLOG_POST:${slug}`;
                       console.log('✅ Stream location updated - streamLocationRef.current:', streamLocationRef.current);
                     }
+                  } else if (data.content.startsWith('---REDIRECT_REDDIT_HUB---')) {
+                    // Redirect to Reddit hub page
+                    console.log('🚀 Redirecting to Reddit hub');
+                    setTimeout(() => {
+                      console.log('🎯 Navigating to /dashboard/reddit');
+                      navigate('/dashboard/reddit');
+                    }, 100);
                   } else if (data.content.startsWith('---STREAM_START---')) {
                     // Streaming has begun
                     setIsStreaming(true);
