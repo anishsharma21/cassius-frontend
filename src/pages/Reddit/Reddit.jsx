@@ -733,6 +733,7 @@ function Reddit() {
     post_actions: (
       <div className="flex items-center justify-center gap-3">
         <ReplyButton 
+          text="Generate"
           onClick={() => {
             console.log('🔴 Post ReplyButton clicked with link:', post.link);
           }}

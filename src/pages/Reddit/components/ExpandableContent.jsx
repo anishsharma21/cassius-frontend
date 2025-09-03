@@ -99,7 +99,7 @@ const ExpandableContent = ({ columns, showCheckboxes, expandableData, rowIndex, 
                           </div>
                           <div className="flex-shrink-0">
                             <ReplyButton 
-                              text="Reply"
+                              text="Generate"
                               iconID="chat"
                               onClick={() => {}}
                               isReplied={localCommentReplyStates && localCommentReplyStates[comment.id] !== undefined ? localCommentReplyStates[comment.id] : comment.replied_to}
