@@ -226,14 +226,10 @@ function Partnerships() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">{detailsModal.followers ? (detailsModal.followers >= 1000000 ? (detailsModal.followers / 1000000).toFixed(1) + 'M' : detailsModal.followers >= 1000 ? (detailsModal.followers / 1000).toFixed(1) + 'K' : detailsModal.followers.toString()) : '0'}</div>
                   <div className="text-sm text-gray-500">Followers</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">{detailsModal.following ? (detailsModal.following >= 1000000 ? (detailsModal.following / 1000000).toFixed(1) + 'M' : detailsModal.following >= 1000 ? (detailsModal.following / 1000).toFixed(1) + 'K' : detailsModal.following.toString()) : '0'}</div>
-                  <div className="text-sm text-gray-500">Following</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">{detailsModal.posts || '0'}</div>
