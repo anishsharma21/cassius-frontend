@@ -13,7 +13,7 @@ const TableHead = ({ columns, showCheckboxes = true }) => {
           const textAlign = isCentered ? 'text-center' : 'text-left';
           
           return (
-            <div key={index} className={`${textAlign} ${column.key === 'post' ? 'p-4 pl-0 pr-2' : 'p-4 pl-0'} text-sm font-medium text-gray-600 ${column.width || ''}`}>
+            <div key={index} className={`${textAlign} ${column.key === 'post' ? 'p-4 pl-4 pr-2' : 'p-4 pl-0'} text-sm font-medium text-gray-600 ${column.width || ''}`}>
               {column.header}
               {column.sortable && (
                 <svg className="inline w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

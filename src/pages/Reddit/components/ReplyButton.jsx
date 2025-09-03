@@ -26,9 +26,9 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
   // Icon mapping based on iconID and text
   const getIcon = (iconID) => {
     // Show sparkle icon for AI Generate feature
-    if (text === "Generate") {
+    if (text === "AI Reply") {
       return (
-        <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-2.5 h-2.5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423L16.5 15.75l.394 1.183a2.25 2.25 0 001.423 1.423L19.5 18.75l-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
         </svg>
       );
@@ -37,19 +37,19 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
     switch (iconID) {
       case 'external-link':
         return (
-          <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-2.5 h-2.5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
         );
       case 'arrow-right':
         return (
-          <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-2.5 h-2.5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 18l6-6-6-6" />
           </svg>
         );
       case 'chat':
         return (
-          <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-2.5 h-2.5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
           </svg>
         );
@@ -70,11 +70,6 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
     
     // Set local generating state immediately for ANY button click
     setIsLocallyGenerating(true);
-    
-    // Immediately update the UI for optimistic response
-    if (onReplyUpdate) {
-      onReplyUpdate(!isReplied);
-    }
     
           // Only generate reply if we're marking as replied (not unreplied)
       if (!isReplied) {
@@ -113,6 +108,11 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
           // Reset local generating state
           setIsLocallyGenerating(false);
           
+          // Update the UI to show "Generated" state after successful completion
+          if (onReplyUpdate) {
+            onReplyUpdate(true);
+          }
+          
           // Call the original onClick handler
           if (onClick) {
             onClick();
@@ -144,6 +144,11 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
         // Reset the generating state immediately
         console.log('🔄 isReplied=true, resetting isLocallyGenerating to false');
         setIsLocallyGenerating(false);
+        
+        // Update UI to show "AI Reply" state
+        if (onReplyUpdate) {
+          onReplyUpdate(false);
+        }
       }
     
     // Now update the backend in the background (don't await)
@@ -181,7 +186,7 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
   if (isReplied) {
     return (
       <button 
-        className={`inline-flex items-center px-3 py-1 rounded-full text-sm border bg-green-50 border-green-200 text-green-700 gap-1 transition-colors ${
+        className={`inline-flex items-center px-3 py-1 rounded-full text-xs border bg-green-50 border-green-200 text-green-700 gap-1 transition-colors ${
           shouldDisableButton 
             ? 'opacity-50 cursor-not-allowed' 
             : 'cursor-pointer hover:bg-green-100'
@@ -190,7 +195,7 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
         disabled={shouldDisableButton}
       >
         Generated
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
         </svg>
       </button>
@@ -199,7 +204,7 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
 
   return (
     <button 
-      className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm transition-colors ${
+      className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs transition-colors ${
         isThisButtonGenerating
           ? 'bg-blue-100 text-blue-600 cursor-wait' // Changed from cursor-not-allowed to cursor-wait
           : shouldDisableButton 
@@ -211,7 +216,7 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
     >
       <span>{isThisButtonGenerating ? 'Generating...' : text}</span>
       {isThisButtonGenerating ? (
-        <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-2.5 h-2.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
       ) : (

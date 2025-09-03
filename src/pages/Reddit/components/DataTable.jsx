@@ -10,13 +10,11 @@ const DataTable = ({
   data, 
   actions = [], 
   showCheckboxes = true,
-  expandableData = null,
   externalPagination = false,
   currentPage = 1,
   totalPages = 1,
   onPageChange = null,
-  isLoading = false,
-  onLoadComments = null
+  createTableData = null  // New prop for dynamic table data
 }) => {
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [internalCurrentPage, setInternalCurrentPage] = useState(1);
@@ -24,7 +22,10 @@ const DataTable = ({
   // Use external pagination if provided, otherwise use internal
   const isExternalPagination = externalPagination && onPageChange;
   const effectiveCurrentPage = isExternalPagination ? currentPage : internalCurrentPage;
-  const effectiveTotalPages = isExternalPagination ? totalPages : Math.ceil(data.length / rowsPerPage);
+  
+  // Use dynamic data if createTableData is provided
+  const tableData = createTableData ? createTableData(expandedRows) : data;
+  const effectiveTotalPages = isExternalPagination ? totalPages : Math.ceil(tableData.length / 10);
 
   const toggleRow = (rowIndex) => {
     const newExpandedRows = new Set(expandedRows);
@@ -40,11 +41,11 @@ const DataTable = ({
   // Calculate pagination
   const pageSize = isExternalPagination ? 10 : 10; // Fixed page size for external, default for internal
   const startIndex = (effectiveCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, data.length);
-  const currentData = isExternalPagination ? data : data.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + pageSize, tableData.length);
+  const currentData = isExternalPagination ? tableData : tableData.slice(startIndex, endIndex);
   
   // For external pagination, if we have data, we're on a valid page
-  const hasData = data && data.length > 0;
+  const hasData = tableData && tableData.length > 0;
 
   // Handle page changes
   const goToPage = (page) => {
@@ -75,7 +76,7 @@ const DataTable = ({
       <TableHeader title={title} actions={actions} />
 
         <div className="w-full">
-          <TableHead columns={columns} showCheckboxes={showCheckboxes} />
+          <TableHead columns={columns} showCheckboxes={false} />
           
           <div>
             {currentData.map((row, rowIndex) => {
@@ -86,21 +87,16 @@ const DataTable = ({
                     row={row}
                     columns={columns}
                     rowIndex={actualRowIndex}
-                    showCheckboxes={showCheckboxes}
+                    showCheckboxes={false}
                     onToggleRow={toggleRow}
                     isExpanded={expandedRows.has(actualRowIndex)}
                   />
                   
                   <ExpandableContent
-                    columns={columns}
-                    showCheckboxes={showCheckboxes}
-                    expandableData={expandableData}
-                    rowIndex={actualRowIndex}
                     isExpanded={expandedRows.has(actualRowIndex)}
                     postContent={row.fullPostContent}
                     postId={row.id}
                     postLink={row.postLink}
-                    postData={row}
                     onCommentReplyUpdate={row.onCommentReplyUpdate}
                     localCommentReplyStates={row.localCommentReplyStates}
                   />
@@ -138,9 +134,9 @@ const DataTable = ({
             {/* Next Page Button */}
             <button
               onClick={goToNextPage}
-              disabled={isExternalPagination ? !hasData || data.length < 10 : effectiveCurrentPage === effectiveTotalPages}
+              disabled={isExternalPagination ? !hasData || tableData.length < 10 : effectiveCurrentPage === effectiveTotalPages}
               className={`p-1 rounded-md transition-colors cursor-pointer ${
-                (isExternalPagination ? (!hasData || data.length < 10) : effectiveCurrentPage === effectiveTotalPages)
+                (isExternalPagination ? (!hasData || tableData.length < 10) : effectiveCurrentPage === effectiveTotalPages)
                   ? 'text-gray-300 bg-gray-100'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
               }`}

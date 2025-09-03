@@ -14,14 +14,15 @@ import ClickableLink from './components/ClickableLink';
 import CopyGoToRedditButton from '../../components/CopyGoToRedditButton';
 
 // Leads Tab Content Component
-const LeadsTabContent = ({ columns, tableData, actions, currentPage, totalPages, onPageChange, isLoading }) => {
+const LeadsTabContent = ({ columns, createTableData, actions, currentPage, totalPages, onPageChange, isLoading }) => {
   return (
     <DataTable
       title="Leads"
       columns={columns}
-      data={tableData}
+      data={[]} // Not used when createTableData is provided
+      createTableData={createTableData}
       actions={actions}
-      showCheckboxes={true}
+      showCheckboxes={false}
       expandableData={[]}
       externalPagination={true}
       currentPage={currentPage}
@@ -707,48 +708,74 @@ function Reddit() {
   const columns = RedditTableConfig();
   const actions = RedditTableActions();
 
-  // Create table data with reply state management and UI components
-  const tableData = (redditPosts || []).map((post) => ({
-    id: post.id,
-    post: (
-      <div className="space-y-1">
-        <div className="font-medium text-gray-900 text-sm leading-5 max-w-md">
-          <div className="break-words overflow-hidden" title={post.body.split('\n')[0]}>
-            <ClickableLink href={post.link}>
-              {post.body.split('\n')[0]}
-            </ClickableLink>
+  // Create function to generate table data with expanded state info
+  const createTableData = (expandedRows = new Set()) => (redditPosts || []).map((post, index) => {
+    const isExpanded = expandedRows.has(index);
+    return {
+      id: post.id,
+      post: (
+        <div className="space-y-1">
+          <div className="font-medium text-gray-900 text-sm leading-5 max-w-md">
+            <div className="flex items-center gap-2">
+              <svg 
+                className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 18l6-6-6-6" />
+              </svg>
+              <div 
+                className="flex-1 break-words overflow-hidden cursor-pointer hover:text-blue-600 transition-colors" 
+                title={post.body.split('\n')[0]}
+              >
+                <span>{post.body.split('\n')[0]}</span>
+              </div>
+              <a 
+                href={post.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Open in Reddit"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
           </div>
         </div>
-      </div>
-    ),
-    fullPostContent: post.body.split('\n').slice(1).join('\n'),
-    postLink: post.link,
-    post_date: (
-      <span className="text-sm text-gray-500">
-        {formatPostDate(post.created_at)}
-      </span>
-    ),
-    post_upvotes: post.score,
-    post_comments: post.num_comments,
-    post_actions: (
-      <div className="flex items-center justify-center gap-3">
-        <ReplyButton 
-          text="Generate"
-          onClick={() => {
-            console.log('🔴 Post ReplyButton clicked with link:', post.link);
-          }}
-          isReplied={localReplyStates[post.id] !== undefined ? localReplyStates[post.id] : post.replied_to}
-          content={post.body}
-          contentType="post"
-          link={post.link}
-          leadId={post.id}
-          onReplyUpdate={(newStatus) => handlePostReplyUpdate(post.id, newStatus)}
-        />
-      </div>
-    ),
-    onCommentReplyUpdate: handleCommentReplyUpdate,
-    localCommentReplyStates: localCommentReplyStates
-  }));
+      ),
+      fullPostContent: post.body.split('\n').slice(1).join('\n'),
+      postLink: post.link,
+      post_date: (
+        <span className="text-sm text-gray-500">
+          {formatPostDate(post.created_at)}
+        </span>
+      ),
+      post_upvotes: post.score,
+      post_comments: post.num_comments,
+      post_actions: (
+        <div className="flex items-center justify-center gap-3">
+          <ReplyButton 
+            text="AI Reply"
+            onClick={() => {
+              console.log('🔴 Post ReplyButton clicked with link:', post.link);
+            }}
+            isReplied={localReplyStates[post.id] !== undefined ? localReplyStates[post.id] : post.replied_to}
+            content={post.body}
+            contentType="post"
+            link={post.link}
+            leadId={post.id}
+            onReplyUpdate={(newStatus) => handlePostReplyUpdate(post.id, newStatus)}
+          />
+        </div>
+      ),
+      onCommentReplyUpdate: handleCommentReplyUpdate,
+      localCommentReplyStates: localCommentReplyStates
+    };
+  });
 
 
 
@@ -819,7 +846,7 @@ function Reddit() {
       {activeTab === 'leads' && (
         <LeadsTabContent
           columns={columns}
-          tableData={tableData}
+          createTableData={createTableData}
           actions={actions}
           currentPage={currentPage}
           totalPages={Math.max(1, Math.ceil(totalPosts / 10))}
