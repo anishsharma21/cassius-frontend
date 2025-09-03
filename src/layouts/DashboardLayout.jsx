@@ -63,7 +63,7 @@ const DashboardLayout = () => {
   const handleMouseMove = (e) => {
     if (!isDragging) return;
     
-    const container = e.currentTarget;
+    const container = document.querySelector('.dashboard-container');
     const rect = container.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const containerWidth = rect.width;
@@ -87,6 +87,22 @@ const DashboardLayout = () => {
     setIsChatCollapsed(!isChatCollapsed);
   };
 
+  // Add document-level event listeners for smooth dragging
+  useEffect(() => {
+    if (isDragging) {
+      const handleDocMouseMove = (e) => handleMouseMove(e);
+      const handleDocMouseUp = () => setIsDragging(false);
+      
+      document.addEventListener('mousemove', handleDocMouseMove);
+      document.addEventListener('mouseup', handleDocMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleDocMouseMove);
+        document.removeEventListener('mouseup', handleDocMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove]);
+
   // Calculate effective chat width - collapsed chat takes minimal space
   const effectiveChatWidth = isChatCollapsed ? 4 : chatWidth; // 4% for collapsed state
 
@@ -100,10 +116,7 @@ const DashboardLayout = () => {
 
       {/* Main Content Area - Floating white sections */}
       <div 
-        className="flex-1 flex flex-col"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        className="flex-1 flex flex-col dashboard-container"
       >
         <div className="flex flex-1 p-2 min-h-0">
           {/* Main Page - Floating white section */}
@@ -129,7 +142,9 @@ const DashboardLayout = () => {
           {/* Chat Page - Floating white section - Hide when showing central Strategy view */}
           {!shouldHideSideChat && (
             <div 
-              className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 ease-in-out ml-auto"
+              className={`bg-white rounded-xl shadow-sm overflow-hidden ml-auto ${
+                !isDragging ? 'transition-all duration-300 ease-in-out' : ''
+              }`}
               style={{ 
                 width: `${effectiveChatWidth}%`
               }}
@@ -137,6 +152,7 @@ const DashboardLayout = () => {
               <SideChat 
                 isCollapsed={isChatCollapsed}
                 onToggleCollapse={toggleChatCollapse}
+                isDragging={isDragging}
               />
             </div>
           )}

@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import useChatConversation from '../hooks/useChatConversation';
 import useChatAPI from '../hooks/useChatAPI';
 
-const SideChat = ({ isCollapsed = false, onToggleCollapse }) => {
+const SideChat = ({ isCollapsed = false, onToggleCollapse, isDragging = false }) => {
   const [prompt, setPrompt] = useState('');
   const [showClearTooltip, setShowClearTooltip] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
@@ -147,7 +147,7 @@ const SideChat = ({ isCollapsed = false, onToggleCollapse }) => {
   }
 
   return (
-    <div className="flex flex-col h-full transition-all duration-300 ease-in-out">
+    <div className={`flex flex-col h-full ${!isDragging ? 'transition-all duration-300 ease-in-out' : ''}`}>
       {/* Header */}
       <div className="flex justify-between -mt-1 items-center p-4">
         <div className="flex items-center gap-3">
@@ -187,7 +187,7 @@ const SideChat = ({ isCollapsed = false, onToggleCollapse }) => {
 
       {/* Conversation Area */}
       <div
-        className="px-4 py-4 overflow-y-auto transition-all duration-300"
+        className={`px-4 py-4 overflow-y-auto ${!isDragging ? 'transition-all duration-300' : ''}`}
         style={{ height: '760px' }}
         ref={conversationRef}
       >
