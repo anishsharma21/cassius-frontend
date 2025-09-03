@@ -86,6 +86,10 @@ export const ChatProvider = ({ children }) => {
         if (msg.type === 'user') {
           return `User: ${msg.content}`;
         } else {
+          // Include Reddit link metadata for AI messages when available
+          if (msg.redditLink && msg.contentType) {
+            return `Cassius: [Reddit: ${msg.redditLink}] ${msg.content}`;
+          }
           return `Cassius: ${msg.content}`;
         }
       })
@@ -195,13 +199,23 @@ export const ChatProvider = ({ children }) => {
                         }, 50);
                       }
                     }
-                  } else if (data.content.startsWith('---REDIRECT_REDDIT_HUB---')) {
+                  } else if (data.content.startsWith('---REDIRECT_REDDIT_HUB')) {
+                    // Extract specific Reddit link from redirect signal if available
+                    let specificRedditLink = 'https://reddit.com';
+                    if (data.content.includes(':')) {
+                      const match = data.content.match(/---REDIRECT_REDDIT_HUB:(.+)---/);
+                      if (match && match[1]) {
+                        specificRedditLink = match[1];
+                        console.log('🎯 Extracted specific Reddit link:', specificRedditLink);
+                      }
+                    }
+                    
                     // Redirect to Reddit hub page and mark message as Reddit-related
                     console.log('🚀 Redirecting to Reddit hub');
                     
-                    // Update the AI message to mark it as Reddit-related so the button appears
+                    // Update the AI message to mark it as Reddit-related with specific link
                     updateAIMessage(aiMessageId, { 
-                      redditLink: 'https://reddit.com', // Generic Reddit link since we don't have specific subreddit
+                      redditLink: specificRedditLink,
                       contentType: 'reddit_reply' 
                     });
                     
