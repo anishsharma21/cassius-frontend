@@ -144,7 +144,7 @@ export const BackgroundTasksProvider = ({ children }) => {
   // Invalidate React Query caches based on task type
   const invalidateCacheForTask = useCallback((taskType) => {
     const CACHE_INVALIDATION_MAP = {
-      [TASK_TYPE.REDDIT_LEADS]: ['redditPosts', 'reddit_metrics'],
+      [TASK_TYPE.REDDIT_LEADS]: ['redditPosts', 'allRedditPosts', 'reddit_metrics'],
       [TASK_TYPE.SEO_INIT]: ['geoBlogPosts', 'geoSearchTerms'],
       [TASK_TYPE.PARTNERSHIPS]: ['influencers', 'partnerships'],
       [TASK_TYPE.GEO_BLOGS]: ['geoBlogPosts'],
@@ -233,11 +233,18 @@ export const BackgroundTasksProvider = ({ children }) => {
         }
       });
       
-      // Check if this progress update indicates new items were created
-      const itemsCreated = customData?.batch_leads || 0;
-      if (itemsCreated > 0) {
-        console.log(`🔄 Progress update shows ${itemsCreated} new items created, invalidating cache`);
+      // For Reddit leads, invalidate cache after each batch completion (regardless of results)
+      // This ensures the UI updates even when a batch finds no new leads
+      if (taskType === TASK_TYPE.REDDIT_LEADS && customData?.batch_completed) {
+        console.log(`🔄 Reddit batch ${customData.batch_completed} completed, invalidating cache`);
         invalidateCacheForTask(taskType);
+      } else {
+        // For other task types, only invalidate when new items were created
+        const itemsCreated = customData?.batch_leads || 0;
+        if (itemsCreated > 0) {
+          console.log(`🔄 Progress update shows ${itemsCreated} new items created, invalidating cache`);
+          invalidateCacheForTask(taskType);
+        }
       }
     } else if (eventType === 'completed') {
       console.log('✅ Task completed, triggering callbacks and cache invalidation');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRedditPosts } from '../../hooks/useRedditPosts';
+import { useAllRedditPosts } from '../../hooks/useAllRedditPosts';
 import { useUserSubreddits } from '../../hooks/useUserSubreddits';
 import { useGeneratePost } from '../../hooks/useGeneratePost';
 import { useGeneratedPosts } from '../../hooks/useGeneratedPosts';
@@ -552,12 +552,13 @@ function Reddit() {
   const [localRepliedCount, setLocalRepliedCount] = useState(0);
   const [activeTab, setActiveTab] = useState('leads'); // New state for tab management
   const [showInfoModal, setShowInfoModal] = useState(false); // New state for info modal
+  const [filterMode, setFilterMode] = useState('all'); // 'all', 'new', 'replied' - for filtering leads
 
   // Background task management (keeping for universal progress indicator)
   useBackgroundTask(TASK_TYPE.REDDIT_LEADS);
 
-  // Fetch Reddit posts using React Query
-  const { data: redditData, isLoading, error } = useRedditPosts(currentPage);
+  // Fetch all Reddit posts using React Query
+  const { data: redditData, isLoading, error } = useAllRedditPosts();
   
   // Fetch generated posts count for the posts tab
   const { totalCount: generatedPostsCount } = useGeneratedPosts(1, 1);
@@ -595,6 +596,11 @@ function Reddit() {
       setCurrentPage(1);
     }
   }, [totalPosts, currentPage]);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterMode]);
 
 
 
@@ -708,8 +714,38 @@ function Reddit() {
   const columns = RedditTableConfig();
   const actions = RedditTableActions();
 
+  // Filter posts based on current filter mode
+  const getFilteredPosts = () => {
+    if (!redditPosts) return [];
+    
+    if (filterMode === 'new') {
+      return redditPosts.filter(post => {
+        const isReplied = localReplyStates[post.id] !== undefined 
+          ? localReplyStates[post.id] 
+          : post.replied_to;
+        return !isReplied;
+      });
+    } else if (filterMode === 'replied') {
+      return redditPosts.filter(post => {
+        const isReplied = localReplyStates[post.id] !== undefined 
+          ? localReplyStates[post.id] 
+          : post.replied_to;
+        return isReplied;
+      });
+    }
+    return redditPosts; // 'all' mode
+  };
+
+  const filteredPosts = getFilteredPosts();
+
   // Create function to generate table data with expanded state info
-  const createTableData = (expandedRows = new Set()) => (redditPosts || []).map((post, index) => {
+  const createTableData = (expandedRows = new Set()) => {
+    // Slice the filtered posts for the current page (10 per page)
+    const startIndex = (currentPage - 1) * 10;
+    const endIndex = startIndex + 10;
+    const postsForCurrentPage = (filteredPosts || []).slice(startIndex, endIndex);
+    
+    return postsForCurrentPage.map((post, index) => {
     const isExpanded = expandedRows.has(index);
     return {
       id: post.id,
@@ -775,7 +811,8 @@ function Reddit() {
       onCommentReplyUpdate: handleCommentReplyUpdate,
       localCommentReplyStates: localCommentReplyStates
     };
-  });
+    });
+  };
 
 
 
@@ -784,12 +821,21 @@ function Reddit() {
 
   return (
     <div className="p-6 bg-white">
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold mb-1">Reddit Hub</h1>
           <p className="text-gray-600">Engage with potential customers on Reddit</p>
         </div>
-        <RedditMetrics totalPosts={localTotalCount || totalPosts} repliedPosts={localRepliedCount !== undefined ? localRepliedCount : repliedPosts} />
+        <div className="flex-shrink-0 md:max-w-[50%]">
+          <RedditMetrics 
+            totalPosts={localTotalCount || totalPosts} 
+            repliedPosts={localRepliedCount !== undefined ? localRepliedCount : repliedPosts}
+            onTotalLeadsClick={() => setFilterMode('all')}
+            onNewLeadsClick={() => setFilterMode(filterMode === 'new' ? 'all' : 'new')}
+            onRepliedLeadsClick={() => setFilterMode(filterMode === 'replied' ? 'all' : 'replied')}
+            activeFilter={filterMode}
+          />
+        </div>
       </div>
 
       {/* Tab Navigation */}
@@ -849,7 +895,7 @@ function Reddit() {
           createTableData={createTableData}
           actions={actions}
           currentPage={currentPage}
-          totalPages={Math.max(1, Math.ceil(totalPosts / 10))}
+          totalPages={Math.max(1, Math.ceil(filteredPosts.length / 10))}
           onPageChange={handlePageChange}
           isLoading={isLoading}
         />
