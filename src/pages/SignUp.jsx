@@ -35,9 +35,17 @@ function SignUp() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    let processedValue = value;
+    
+    // Handle website_url field to remove duplicate https:// prefixes
+    if (name === 'website_url' && value.startsWith('https://https://')) {
+      processedValue = value.replace(/^https:\/\/https:\/\//, 'https://');
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: processedValue
     }));
     
     // Clear error when user starts typing
