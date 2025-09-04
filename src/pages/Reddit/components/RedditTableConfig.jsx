@@ -54,7 +54,7 @@ const RedditTableConfig = () => {
       header: "Status",
       sortable: false,
       bold: false,
-      width: "w-28" // Fixed width of 96px
+      width: "w-36" // Fixed width increased further to prevent AI Reply text wrapping
     }
   ];
 

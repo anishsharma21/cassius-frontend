@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
   redditComments: `${API_BASE_URL}/reddit/comments`,
   updateRedditRepliedTo: `${API_BASE_URL}/reddit/update-replied-to`,
   generateRedditReply: `${API_BASE_URL}/reddit/generate-reply`,
+  deleteRedditLead: `${API_BASE_URL}/reddit/leads`,
 
   // Reddit post generation endpoints
   userSubreddits: `${API_BASE_URL}/reddit/user-subreddits`,

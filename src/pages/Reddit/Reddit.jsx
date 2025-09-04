@@ -13,6 +13,7 @@ import DataTable from './components/DataTable';
 import ReplyButton from './components/ReplyButton';
 import ClickableLink from './components/ClickableLink';
 import CopyGoToRedditButton from '../../components/CopyGoToRedditButton';
+import DeleteButton from '../../components/DeleteButton';
 
 // Leads Tab Content Component
 const LeadsTabContent = ({ columns, createTableData, actions, currentPage, totalPages, onPageChange, isLoading }) => {
@@ -641,6 +642,17 @@ function Reddit() {
     }
   };
 
+  const handleDeleteSuccess = (deletedPostId) => {
+    // Update local counts when a post is deleted
+    const deletedPost = redditPosts?.find(post => post.id === deletedPostId);
+    if (deletedPost) {
+      setLocalTotalCount(prev => Math.max(0, prev - 1));
+      if (deletedPost.replied_to || localReplyStates[deletedPostId]) {
+        setLocalRepliedCount(prev => Math.max(0, prev - 1));
+      }
+    }
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -797,7 +809,7 @@ function Reddit() {
       post_upvotes: post.score,
       post_comments: post.num_comments,
       post_actions: (
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex items-center justify-center gap-2">
           <ReplyButton 
             text="AI Reply"
             onClick={() => {
@@ -809,6 +821,10 @@ function Reddit() {
             link={post.link}
             leadId={post.id}
             onReplyUpdate={(newStatus) => handlePostReplyUpdate(post.id, newStatus)}
+          />
+          <DeleteButton 
+            leadId={post.id}
+            onDeleteSuccess={handleDeleteSuccess}
           />
         </div>
       ),

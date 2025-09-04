@@ -21,7 +21,7 @@ const comingSoonLinks = [
   { name: 'Sentiment Analysis', description: 'Monitor brand perception' },
   { name: 'SEO Auditor', description: 'Analyze website performance' },
   { name: 'Publication Outreach Agent', description: 'Connect with media outlets' },
-  { name: 'GEO Hub', description: ' LLM Ranking Optimisation' },
+  { name: 'GEO Hub', description: 'LLM Ranking Optimisation' },
   { name: 'Competition Marketing Analysis', description: 'Analyze competitors\' strategies' },
   { name: 'Online Forum Seeding', description: 'Strategic forum engagement' },
   { name: 'Voice Training', description: 'Train your brand voice' },
