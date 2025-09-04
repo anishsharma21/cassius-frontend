@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAllRedditPosts } from '../../hooks/useAllRedditPosts';
 import { useUserSubreddits } from '../../hooks/useUserSubreddits';
 import { useGeneratePost } from '../../hooks/useGeneratePost';
@@ -545,6 +546,7 @@ const formatPostDate = (dateString) => {
 };
 
 function Reddit() {
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [localReplyStates, setLocalReplyStates] = useState({});
   const [localCommentReplyStates, setLocalCommentReplyStates] = useState({});
@@ -621,6 +623,8 @@ function Reddit() {
     } else {
       setLocalRepliedCount(prev => Math.max(0, prev - 1));
     }
+    
+    // Note: Cache invalidation moved to useUpdateRedditRepliedTo success callback
   };
 
   const handleCommentReplyUpdate = (commentId, newStatus) => {

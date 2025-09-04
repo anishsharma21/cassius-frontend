@@ -1,8 +1,10 @@
 import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import UserMenu from './UserMenu';
+import NotificationBadge from './NotificationBadge';
 import API_ENDPOINTS from '../config/api';
 import brainIcon from '../assets/brain.svg'
+import { useAllRedditPosts } from '../hooks/useAllRedditPosts';
 
 const sidebarItems = [
   { 
@@ -83,6 +85,10 @@ const sidebarItems = [
 ];
 
 const Sidebar = ({ isCollapsed, onToggle }) => {
+  // Fetch Reddit posts to get unreplied count
+  const { data: redditData } = useAllRedditPosts();
+  const newLeadsCount = redditData ? (redditData.total_count - redditData.replied_count) : 0;
+
   // Fetch company data using React Query
   const { data: company, isLoading: isLoadingCompany } = useQuery({
     queryKey: ['company'],
@@ -223,8 +229,9 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
                 }
               title={isCollapsed ? name : undefined}
             >
-              <div className="icon-container ml-1.5 flex-shrink-0">
+              <div className="icon-container ml-1.5 flex-shrink-0 relative">
                 {icon}
+                {name === 'Reddit' && <NotificationBadge count={newLeadsCount} />}
               </div>
               <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${isCollapsed ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                 {!isCollapsed && (

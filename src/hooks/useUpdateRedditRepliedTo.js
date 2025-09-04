@@ -30,8 +30,9 @@ export const useUpdateRedditRepliedTo = () => {
       return response.json();
     },
     onSuccess: (data) => {
-      // Don't update cache counts since we're handling them locally in the component
       console.log('✅ Backend updated successfully:', data);
+      // Invalidate cache so sidebar notification updates after backend confirms the change
+      queryClient.invalidateQueries({ queryKey: ['allRedditPosts'] });
     },
     onError: (error) => {
       console.error('❌ Failed to update replied_to status:', error);
