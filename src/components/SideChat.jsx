@@ -225,8 +225,8 @@ const SideChat = ({ isCollapsed = false, onToggleCollapse, isDragging = false })
                               <button
                                 onClick={async () => {
                                   try {
-                                    // Copy the full content (including prefix) for clipboard
-                                    await navigator.clipboard.writeText(message.content);
+                                    // Copy displayContent (without prefix) or fallback to content
+                                    await navigator.clipboard.writeText(message.displayContent || message.content);
                                     console.log('✅ Response copied to clipboard');
                                     // Open Reddit link after copying
                                     window.open(message.redditLink, '_blank');
