@@ -75,6 +75,47 @@ const DataTable = ({
     <div className="bg-white rounded-lg shadow-sm border border-gray-100">
       <TableHeader title={title} actions={actions} />
 
+      {/* Top Pagination Controls */}
+      <div className="flex justify-end px-6 py-3 border-b border-gray-200">
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-gray-700">
+            {isExternalPagination ? `Page ${effectiveCurrentPage} of ${effectiveTotalPages}` : `${effectiveCurrentPage} of ${effectiveTotalPages}`}
+          </span>
+          
+          <div className="flex items-center space-x-2">
+            {/* Previous Page Button */}
+            <button
+              onClick={goToPreviousPage}
+              disabled={effectiveCurrentPage === 1}
+              className={`p-1 rounded-md transition-colors cursor-pointer ${
+                effectiveCurrentPage === 1
+                  ? 'text-gray-300 bg-gray-100'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* Next Page Button */}
+            <button
+              onClick={goToNextPage}
+              disabled={isExternalPagination ? !hasData || tableData.length < 10 : effectiveCurrentPage === effectiveTotalPages}
+              className={`p-1 rounded-md transition-colors cursor-pointer ${
+                (isExternalPagination ? (!hasData || tableData.length < 10) : effectiveCurrentPage === effectiveTotalPages)
+                  ? 'text-gray-300 bg-gray-100'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
         <div className="w-full">
           <TableHead columns={columns} showCheckboxes={false} />
           
