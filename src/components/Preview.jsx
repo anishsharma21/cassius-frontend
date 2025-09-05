@@ -1,12 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 const Preview = ({ content, isLoading = false }) => {
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleCopyToClipboard = async () => {
+    if (!content) return;
+    
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000); // Reset success state after 2 seconds
+    } catch (error) {
+      console.error('Failed to copy content to clipboard:', error);
+      // Fallback for older browsers
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = content;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (fallbackError) {
+        console.error('Fallback copy method also failed:', fallbackError);
+      }
+    }
+  };
+
   return (
     <div className="flex-1">
       {/* Preview Header */}
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-700 mb-2">Preview</h3>
+      <div className="mb-4 flex justify-between items-center">
+        <h3 className="text-lg font-medium text-gray-700">Preview</h3>
+        {content && !isLoading && (
+          <button
+            onClick={handleCopyToClipboard}
+            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+              copySuccess 
+                ? 'bg-green-100 text-green-700 border border-green-200' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+            }`}
+            title="Copy blog content to clipboard"
+          >
+            {copySuccess ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy
+              </>
+            )}
+          </button>
+        )}
       </div>
       
       {/* Preview Content */}
