@@ -31,6 +31,7 @@ const LeadsTabContent = ({ columns, createTableData, actions, currentPage, total
       totalPages={totalPages}
       onPageChange={onPageChange}
       isLoading={isLoading}
+      showTopPagination={true}
     />
   );
 };
