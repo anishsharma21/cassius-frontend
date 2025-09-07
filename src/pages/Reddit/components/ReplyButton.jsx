@@ -1,4 +1,5 @@
 import React, { useEffect, useContext, useState } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import Tooltip from './Tooltip';
 import { useUpdateRedditRepliedTo } from '../../../hooks/useUpdateRedditRepliedTo';
 import { useRedditReply } from '../../../hooks/useRedditReply';
@@ -8,6 +9,7 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
   const updateRepliedTo = useUpdateRedditRepliedTo();
   const { generateReply, isGenerating } = useRedditReply();
   const { isStreaming } = useContext(ChatContext);
+  const posthog = usePostHog();
   
   // Local state to track if this specific button is generating
   const [isLocallyGenerating, setIsLocallyGenerating] = useState(false);
@@ -65,6 +67,23 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
       return;
     }
     
+    // Extract subreddit from link if available
+    const extractSubreddit = (url) => {
+      if (!url) return 'unknown';
+      const match = url.match(/\/r\/([^/]+)/);
+      return match ? match[1] : 'unknown';
+    };
+    
+    // Track AI Reply button click
+    posthog?.capture('ai_reply_clicked', {
+      content_type: contentType,
+      lead_id: leadId,
+      content_length: content?.length || 0,
+      subreddit: extractSubreddit(link),
+      is_retry: isReplied,
+      action: 'ai_reply_button_clicked'
+    });
+    
     console.log('🔴 ReplyButton clicked with data:', { content, contentType, link, postContent, leadId, isReplied });
     console.log('🔄 Setting isLocallyGenerating to true');
     
@@ -74,6 +93,15 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
           // Only generate reply if we're marking as replied (not unreplied)
       if (!isReplied) {
         try {
+          // Track generation started
+          posthog?.capture('ai_reply_generation_started', {
+            content_type: contentType,
+            lead_id: leadId,
+            content_length: content?.length || 0,
+            subreddit: extractSubreddit(link),
+            action: 'generation_started'
+          });
+          
           // Generate reply using the backend API
           // For posts: use content as business context
           // For comments: use postContent as business context (the post the comment was made on)
@@ -105,6 +133,16 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
           
           console.log('✅ Generated reply streaming completed');
           
+          // Track generation completed
+          posthog?.capture('ai_reply_generation_completed', {
+            content_type: contentType,
+            lead_id: leadId,
+            content_length: content?.length || 0,
+            reply_length: aiGeneratedReply?.length || 0,
+            subreddit: extractSubreddit(link),
+            action: 'generation_completed'
+          });
+          
           // Reset local generating state
           setIsLocallyGenerating(false);
           
@@ -119,6 +157,16 @@ const ReplyButton = ({ text = "Reply", iconID = "chat", onClick, isReplied = fal
           }
         } catch (error) {
           console.error('❌ Failed to generate reply:', error);
+          
+          // Track generation failed
+          posthog?.capture('ai_reply_generation_failed', {
+            content_type: contentType,
+            lead_id: leadId,
+            content_length: content?.length || 0,
+            subreddit: extractSubreddit(link),
+            error_message: error?.message || 'Unknown error',
+            action: 'generation_failed'
+          });
           
           // Reset local generating state on error
           setIsLocallyGenerating(false);
